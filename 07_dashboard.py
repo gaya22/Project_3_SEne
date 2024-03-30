@@ -24,10 +24,16 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     html.Div(id='df_total', style={'display': 'none'}), # Content of the webpage
     dcc.Tabs(id='tabs', value='tab-1', children=[ # Container of tabs
         dcc.Tab(label='Natural gas data analysis', children=[ # First tab - Data analysis
-            html.Div([
-                html.H2("Natural gas data analysis"),
-                dcc.Graph(id="world-map", config={'scrollZoom': False}),
-                html.Div(id='output_country')
+            html.Div(children=[
+                html.H2("Natural gas data analysis"), # Subtitle
+                html.Div(children=[ # Divide the webpage in 2 columns
+                    html.Div(children=[ # First column
+                        dcc.Graph(id="world-map", config={'scrollZoom': False})
+                    ], style={'width': '70%', 'display': 'inline-block'}),
+                    html.Div(children=[ # Second column
+                        html.Div(id='output_country')
+                    ], style={'width': '30%', 'display': 'inline-block'})
+                ])
             ])
         ]),
 
@@ -78,7 +84,7 @@ def display_click_data(clickData):
     else:
         return 'Click on a country to see details.'
 
-# Plotly map
+# App to be able to click in the map
 @app.callback(
     Output('world-map', 'figure'),
     [Input('world-map', 'clickData')]
@@ -100,10 +106,10 @@ def update_map(clickData):
             hoverinfo='text'
         )],
         'layout': go.Layout(
-            title='Clickable World Map',
+            title='Select two countries',
             geo=dict(
                 showframe=False,
-                showcoastlines=False,
+                showcoastlines=True,
                 projection_type='equirectangular'
             )
         )
