@@ -8,7 +8,14 @@ import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objs as go
 import pandas as pd
+from datetime import datetime
+import auxiliary_functions as af
 
+# Load and prepare dataframes
+orig_df = pd.read_csv("GTF_export_cleaned.csv")
+countries = af.get_countries(orig_df)
+
+# Just a little dataframe to try the code
 data = pd.DataFrame({
     'country': ['USA', 'Canada', 'Mexico', 'Italy'],
     'value': [10, 20, 30, 40]
@@ -19,6 +26,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 
+# Creating the layout of the dashboard
 app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     html.H1('Natural gas imports and exports'), # Title of the webpage
     html.Div(id='df_total', style={'display': 'none'}), # Content of the webpage
@@ -31,8 +39,17 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                         dcc.Graph(id="world-map", config={'scrollZoom': False})
                     ], style={'width': '70%', 'display': 'inline-block'}),
                     html.Div(children=[ # Second column
-                        html.Div(id='output_country')
-                    ], style={'width': '30%', 'display': 'inline-block'})
+                        html.Div(id='output_country'),
+                        dcc.DatePickerRange(
+                            id='my-date-picker-range',
+                            min_date_allowed=datetime(2008, 10, 1),
+                            max_date_allowed=datetime(2024, 1, 1),
+                            initial_visible_month=datetime(2008, 10, 1),
+                            start_date=datetime(2008, 10, 1),
+                            end_date=datetime(2024, 1, 1)
+                            )
+                        ], style={'width': '30%', 'display': 'inline-block'}
+                    )
                 ])
             ])
         ]),
@@ -70,7 +87,6 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     ])
 ])
 
-
 # Callback to update information when a country is clicked
 @app.callback(
     Output('output_country', 'children'),
@@ -79,8 +95,10 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
 def display_click_data(clickData):
     if clickData:
         country = clickData['points'][0]['location']
-        value = data[data['country'] == country]['value'].values[0]
-        return f'You clicked on {country}. Value: {value}'
+        # Calculate total flow of natural gas for selected country pair and time period
+        # Use af.exit_flows() and af.entry_flows() functions from auxiliary_functions.py
+        total_flow = ... # Calculate total flow based on selected countries and date range
+        return f'Total flow of natural gas between selected countries: {total_flow}'
     else:
         return 'Click on a country to see details.'
 
@@ -90,12 +108,13 @@ def display_click_data(clickData):
     [Input('world-map', 'clickData')]
 )
 def update_map(clickData):
+    # Update Choropleth trace based on selected countries and date range
     return {
         'data': [go.Choropleth(
-            locations=data['country'],
-            z=data['value'],
+            locations=countries,
+            z=data['value'], # Replace with actual data
             locationmode='country names',
-            text=data['country'],
+            text=countries,
             colorscale='Viridis',
             autocolorscale=False,
             reversescale=True,
@@ -114,7 +133,6 @@ def update_map(clickData):
             )
         )
     }
-
 
 if __name__ == '__main__':
     app.run_server(debug = True)
