@@ -13,13 +13,9 @@ import auxiliary_functions as af
 
 # Load and prepare dataframes
 orig_df = pd.read_csv("GTF_export_cleaned.csv")
-countries = af.get_countries(orig_df)
-
-# Just a little dataframe to try the code
-data = pd.DataFrame({
-    'country': ['USA', 'Canada', 'Mexico', 'Italy'],
-    'value': [10, 20, 30, 40]
-})
+tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countries (as index) and the total exit/enter flows of the whole period
+exit_flow_countries = af.get_exit_countries(orig_df)
+enter_flow_countries = af.get_enter_countries(orig_df)
 
 # Creating the dashboard
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -93,12 +89,23 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     [Input('world-map', 'clickData')]
 )
 def display_click_data(clickData):
+    country = "restart"
     if clickData:
-        country = clickData['points'][0]['location']
-        # Calculate total flow of natural gas for selected country pair and time period
-        # Use af.exit_flows() and af.entry_flows() functions from auxiliary_functions.py
-        total_flow = ... # Calculate total flow based on selected countries and date range
-        return f'Total flow of natural gas between selected countries: {total_flow}'
+        if country == "restart": # Means that the user is selecting the exit country
+            country = clickData['points'][0]['location']
+            if country in exit_flow_countries:
+                    exit = country
+            else:
+                country = "restart"
+                return f'This country has not exit flows. Please choose another one.'
+        else: # The user is selecting the enter country
+            country = clickData['points'][0]['location']
+            if country in enter_flow_countries:
+                enter = country
+            else:
+                return f'This country has not enter flows. Please restart.'
+            country = "restart" # To restart from the exit country
+
     else:
         return 'Click on a country to see details.'
 
@@ -111,10 +118,10 @@ def update_map(clickData):
     # Update Choropleth trace based on selected countries and date range
     return {
         'data': [go.Choropleth(
-            locations=countries,
-            z=data['value'], # Replace with actual data
+            locations=tot_flows.index,
+            z=tot_flows["tot_exit_flows"], # The color of the map is based on the exit flows
             locationmode='country names',
-            text=countries,
+            text=tot_flows.index,
             colorscale='Viridis',
             autocolorscale=False,
             reversescale=True,
