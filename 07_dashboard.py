@@ -14,8 +14,8 @@ import auxiliary_functions as af
 # Load and prepare dataframes
 orig_df = pd.read_csv("GTF_export_cleaned.csv")
 tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countries (as index) and the total exit/enter flows of the whole period
-exit_flow_countries = af.get_exit_countries(orig_df)
-enter_flow_countries = af.get_enter_countries(orig_df)
+exit_flow_countries = af.get_exit_countries(orig_df) # List of all the countries involved in the study that have extit flows
+enter_flow_countries = af.get_enter_countries(orig_df) # list of all the countries involved in the study that have entry flows
 
 # Creating the dashboard
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -32,8 +32,9 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                 html.H2("Natural gas data analysis"), # Subtitle
                 html.Div(children=[ # Divide the webpage in 2 columns
                     html.Div(children=[ # First column
-                        dcc.Graph(id="world-map", config={'scrollZoom': False})
-                    ], style={'width': '70%', 'display': 'inline-block'}),
+                        dcc.Graph(id="world-map", config={'scrollZoom': True},
+                                  style={'width':'100%', 'height':'80vh'})
+                    ], style={'width': '60%', 'display': 'inline-block'}),
                     html.Div(children=[ # Second column
                         html.Div(id='output_country'),
                         dcc.DatePickerRange(
@@ -129,7 +130,8 @@ def update_map(clickData):
             marker_line_width=0.5,
             colorbar_tickprefix='',
             colorbar_title='Value',
-            hoverinfo='text'
+            hoverinfo='text',
+            selectedpoints = [] # Here I could put a list that updates after the first country is selected, to show the countries that can match.
         )],
         'layout': go.Layout(
             title='Select two countries',
