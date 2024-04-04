@@ -32,19 +32,13 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                 html.H2("Natural gas data analysis"), # Subtitle
                 html.Div(children=[ # Divide the webpage in 2 columns
                     html.Div(children=[ # First column
-                        dcc.Graph(id="world-map", config={'scrollZoom': True},
-                                  style={'width':'100%', 'height':'80vh'})
+                        dcc.Graph(id="world-map", 
+                                  config={'scrollZoom': True},
+                                  clickData={'points': []},
+                                  style={'width':'100%', 'height':'80vh'}),
                     ], style={'width': '60%', 'display': 'inline-block'}),
                     html.Div(children=[ # Second column
-                        html.Div(id='output_country'),
-                        dcc.DatePickerRange(
-                            id='my-date-picker-range',
-                            min_date_allowed=datetime(2008, 10, 1),
-                            max_date_allowed=datetime(2024, 1, 1),
-                            initial_visible_month=datetime(2008, 10, 1),
-                            start_date=datetime(2008, 10, 1),
-                            end_date=datetime(2024, 1, 1)
-                            )
+                        html.Div(id='selected_countries')
                         ], style={'width': '30%', 'display': 'inline-block'}
                     )
                 ])
@@ -84,39 +78,15 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     ])
 ])
 
-# Callback to update information when a country is clicked
-@app.callback(
-    Output('output_country', 'children'),
-    [Input('world-map', 'clickData')]
-)
-def display_click_data(clickData):
-    country = "restart"
-    if clickData:
-        if country == "restart": # Means that the user is selecting the exit country
-            country = clickData['points'][0]['location']
-            if country in exit_flow_countries:
-                    exit = country
-            else:
-                country = "restart"
-                return f'This country has not exit flows. Please choose another one.'
-        else: # The user is selecting the enter country
-            country = clickData['points'][0]['location']
-            if country in enter_flow_countries:
-                enter = country
-            else:
-                return f'This country has not enter flows. Please restart.'
-            country = "restart" # To restart from the exit country
-
-    else:
-        return 'Click on a country to see details.'
-
 # App to be able to click in the map
 @app.callback(
     Output('world-map', 'figure'),
     [Input('world-map', 'clickData')]
 )
 def update_map(clickData):
-    # Update Choropleth trace based on selected countries and date range
+    print("Click data:", clickData)
+    selected_countries = [point['location'] for point in clickData['points']]
+    print("Selected countries:", selected_countries)
     return {
         'data': [go.Choropleth(
             locations=tot_flows.index,
@@ -131,7 +101,7 @@ def update_map(clickData):
             colorbar_tickprefix='',
             colorbar_title='Value',
             hoverinfo='text',
-            selectedpoints = [] # Here I could put a list that updates after the first country is selected, to show the countries that can match.
+            selectedpoints = selected_countries
         )],
         'layout': go.Layout(
             title='Select two countries',
@@ -142,6 +112,20 @@ def update_map(clickData):
             )
         )
     }
+
+# Callback to update information when a country is clicked
+@app.callback(
+    Output('selected_countries', 'children'),
+    [Input('world-map', 'clickData')]
+)
+def display_click_data(clickData):
+    print("Click data:", clickData)
+    selected_countries = [point['location'] for point in clickData['points']]
+    print("Selected countries", selected_countries)
+    if len(selected_countries) == 2:
+        return f'Selected countries : {selected_countries[0]} and {selected_countries[1]}'
+    else:
+        return "Ma porcoddio"
 
 if __name__ == '__main__':
     app.run_server(debug = True)
