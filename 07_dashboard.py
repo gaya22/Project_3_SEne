@@ -5,16 +5,19 @@ Description: webpage runner that shows the study of the data.
 
 # Import the main libraries
 import dash
-from dash import dcc, html, Input, Output, State
+from dash import dcc, html, Input, Output
 import plotly.graph_objs as go
 import pandas as pd
-from datetime import datetime
+import plotly.io as pio
+import os
+import numpy as np
 import auxiliary_functions as af
 
 # Load and prepare dataframes
 orig_df = pd.read_csv("GTF_export_cleaned.csv") # Upload the dataframe cleaned
 orig_df["Month"] = pd.to_datetime(orig_df["Month"], format="mixed") # Re-setting the month as datetime object
 orig_df = orig_df.set_index("Month", drop=True) # Re-setting the month as index
+date_range = orig_df.index.values # Array of all the dates
 tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countries (as index) and the total exit/enter flows of the whole period
 exit_flow_countries = af.get_exit_countries(orig_df) # List of all the countries involved in the study that have extit flows
 enter_flow_countries = af.get_enter_countries(orig_df) # list of all the countries involved in the study that have entry flows
@@ -47,11 +50,23 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                   style={'width':'100%', 'height':'65vh'}),
                     ], style={'width': '45%', 'float': 'left'}),
                     html.Div(children=[ # Right part of the webpage
-                        html.P(id="checklist-paragraph"),
+                        html.P(id="checklist-paragraph"), # there is a callback that updates the paragraph (update_paragraph)
                         dcc.Checklist(id = "checklist-country",
                                       # options = there is a callback that updates it (update_checklist_options)
                                       inline=True),
-                        dcc.Graph(id='selected_country_graph')
+                        dcc.Graph(id='selected_country_graph'), # Graph of values
+                        dcc.RangeSlider(id='date-range-slider',
+                                        marks = None,
+                                        min=0,
+                                        max=len(date_range)-1,
+                                        step=1,
+                                        value=[0, len(date_range)-1], # Initial date range
+                                        ),
+                        html.Div([
+                            html.Button("Download figure", id="btn-download"),
+                            dcc.Download(id="download"),
+                            html.A("Download", id="download-link", download="figure.png", href="", target="_blank", style={'display':'none'})
+                        ])
                     ], style={'width': '55%', 'float': 'right'})
                 ])
             ])
@@ -150,14 +165,15 @@ def update_checklist_options(clickData, direction):
     else:
         return [] # Return empty options if no country is selected
 
-# Callback to update graph based on selected country and checklist options
+# Callback to update graph based on selected country, checklist options and date range
 @app.callback(
     Output('selected_country_graph', 'figure'),
     [Input('world-map', 'clickData'),
      Input('checklist-country', 'value'),
-     Input('radio-from-to', 'value')]
+     Input('radio-from-to', 'value'),
+     Input('date-range-slider', 'value')]
 )
-def update_country_graph(clickData, checked_countries, direction):
+def update_country_graph(clickData, checked_countries, direction, valuerange):
     if clickData and 'points' in clickData and clickData['points']:
         selected_country = clickData['points'][0]['location']
         if direction == "from":
@@ -166,6 +182,9 @@ def update_country_graph(clickData, checked_countries, direction):
         else:
             flow_df = af.entry_flows(selected_country, orig_df) # dataframe of the entry flows
             prep = "to "
+        start_date = flow_df.index.values[valuerange[0]]
+        end_date = flow_df.index.values[valuerange[1]]
+        flow_df = flow_df[start_date:end_date]
         data = []
         selected_columns = [item for item in checked_countries or []] # List created from "checked_countries" that is the same as the index of "exits"
         for col in selected_columns:
@@ -178,7 +197,7 @@ def update_country_graph(clickData, checked_countries, direction):
             )
             data.append(trace)
         layout = go.Layout(
-            title='Natural gas movements ' + prep + selected_country,
+            title= f'Natural gas movements {prep, selected_country}',
             xaxis=dict(title='Month'),
             yaxis=dict(title='m³')
         )
@@ -190,6 +209,21 @@ def update_country_graph(clickData, checked_countries, direction):
             'data': [],
             'layout': {}
         }
+    
+# Callback to download figures
+@app.callback(
+    Output("download", "data"),
+    [Input("btn-download", "n_clicks"),
+     Input("selected_country_graph", "figure")],
+    prevent_initial_call = True
+)
+def download_fig(n_clicks, figure):
+    if n_clicks is not None and figure:
+        pio.write_image(figure, "figure.png")
+        file_path = os.path.abspath("figure.png")
+        return dict(content=file_path, filename="figure.png")
+    else:
+        return dash.no_update
 
 if __name__ == '__main__':
     app.run_server(debug = True)
