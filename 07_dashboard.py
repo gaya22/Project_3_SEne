@@ -12,7 +12,9 @@ from datetime import datetime
 import auxiliary_functions as af
 
 # Load and prepare dataframes
-orig_df = pd.read_csv("GTF_export_cleaned.csv")
+orig_df = pd.read_csv("GTF_export_cleaned.csv") # Upload the dataframe cleaned
+orig_df["Month"] = pd.to_datetime(orig_df["Month"], format="mixed") # Re-setting the month as datetime object
+orig_df = orig_df.set_index("Month", drop=True) # Re-setting the month as index
 tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countries (as index) and the total exit/enter flows of the whole period
 exit_flow_countries = af.get_exit_countries(orig_df) # List of all the countries involved in the study that have extit flows
 enter_flow_countries = af.get_enter_countries(orig_df) # list of all the countries involved in the study that have entry flows
@@ -36,10 +38,10 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                   config={'scrollZoom': True},
                                   clickData={'points': []},
                                   style={'width':'100%', 'height':'80vh'}),
-                    ], style={'width': '60%', 'display': 'inline-block'}),
+                    ], style={'width': '40%', 'display': 'inline-block'}),
                     html.Div(children=[ # Second column
-                        html.Div(id='selected_countries')
-                        ], style={'width': '30%', 'display': 'inline-block'}
+                        html.Div(id='selected_country_graph')
+                        ], style={'width': '60%', 'display': 'inline-block'}
                     )
                 ])
             ])
@@ -113,19 +115,26 @@ def update_map(clickData):
         )
     }
 
-# Callback to update information when a country is clicked
+# Callback to update graph based on selected country
 @app.callback(
-    Output('selected_countries', 'children'),
+    Output('selected_country_graph', 'children'),
     [Input('world-map', 'clickData')]
 )
-def display_click_data(clickData):
-    print("Click data:", clickData)
-    selected_countries = [point['location'] for point in clickData['points']]
-    print("Selected countries", selected_countries)
-    if len(selected_countries) == 2:
-        return f'Selected countries : {selected_countries[0]} and {selected_countries[1]}'
+def update_country_graph(clickData):
+    if clickData and 'points' in clickData:
+        selected_country = clickData['points'][0]['location']
+        # Add your code here to plot the graph based on selected_country
+        # Example code:
+        # filtered_df = orig_df[orig_df['Country'] == selected_country]
+        # graph_data = your_function_to_generate_graph_data(filtered_df)
+        # figure = go.Figure(data=graph_data)
+        # return figure
     else:
-        return "Ma porcoddio"
+        # Return a default empty graph if no country is selected
+        return {
+            'data': [],
+            'layout': {}
+        }
 
 if __name__ == '__main__':
     app.run_server(debug = True)
