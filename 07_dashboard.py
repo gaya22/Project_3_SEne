@@ -33,16 +33,25 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
             html.Div(children=[
                 html.H2("Natural gas data analysis"), # Subtitle
                 html.Div(children=[ # Divide the webpage in 2 columns
-                    html.Div(children=[ # First column
-                        dcc.Graph(id="world-map", 
+                    html.Div(children=[ # Left part of the webpage
+                        html.P("Select a country to plot the outgoing and incoming natural gas flows"),
+                        dcc.RadioItems(id="radio-from-to",
+                            options=[
+                                {'label': 'From', 'value': 'from'},
+                                {'label': 'To', 'value': 'to'}],
+                            value = 'from',
+                            inline=True),
+                        dcc.Graph(id="world-map",
                                   config={'scrollZoom': True},
                                   clickData={'points': []},
                                   style={'width':'100%', 'height':'80vh'}),
-                    ], style={'width': '40%', 'display': 'inline-block'}),
-                    html.Div(children=[ # Second column
+                    ], style={'width': '45%', 'float': 'left'}),
+                    html.Div(children=[ # Right part of the webpage
+                        dcc.Checklist(id = "checklist-country",
+                                      # options = update options based on the selected country on map
+                                      ),
                         dcc.Graph(id='selected_country_graph')
-                        ], style={'width': '60%', 'display': 'inline-block'}
-                    )
+                        ], style={'width': '55%', 'float': 'right'})
                 ])
             ])
         ]),
@@ -86,9 +95,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     [Input('world-map', 'clickData')]
 )
 def update_map(clickData):
-    print("Click data:", clickData)
     selected_countries = [point['location'] for point in clickData['points']]
-    print("Selected countries:", selected_countries)
     return {
         'data': [go.Choropleth(
             locations=tot_flows.index,
@@ -97,16 +104,12 @@ def update_map(clickData):
             text=tot_flows.index,
             colorscale='Viridis',
             autocolorscale=False,
-            reversescale=True,
-            marker_line_color='darkgray',
+            marker_line_color='black',
             marker_line_width=0.5,
-            colorbar_tickprefix='',
-            colorbar_title='Value',
             hoverinfo='text',
             selectedpoints = selected_countries
         )],
         'layout': go.Layout(
-            title='Select two countries',
             geo=dict(
                 showframe=False,
                 showcoastlines=True,
@@ -115,29 +118,50 @@ def update_map(clickData):
         )
     }
 
-# Callback to update graph based on selected country
+# Callback to update checklist options based on selected country
 @app.callback(
-    Output('selected_country_graph', 'figure'),
+    Output('checklist-country', 'options'),
     [Input('world-map', 'clickData')]
 )
-def update_country_graph(clickData):
+def update_checklist_options(clickData):
+    if clickData and 'points' in clickData and clickData['points']:
+        selected_country = clickData['points'][0]['location']
+        exits = af.exit_flows(selected_country, orig_df)
+        # Extract country names from column names
+        country_names = [col.split('to')[1] for col in exits.columns]
+        options = [{'label': country, 'value': country} for country in country_names]
+        return options
+    else:
+        # Return empty options if no country is selected
+        return []
+
+# Callback to update graph based on selected country and checklist options
+@app.callback(
+    Output('selected_country_graph', 'figure'),
+    [Input('world-map', 'clickData'),
+     Input('checklist-country', 'value')]
+)
+def update_country_graph(clickData, selected_countries):
     if clickData and 'points' in clickData and clickData['points']:
         selected_country = clickData['points'][0]['location']
         exits = af.exit_flows(selected_country, orig_df)
         data = []
-        for col in exits.columns:
+        # Filter columns based on selected countries in the checklist
+        selected_columns = ['to' + country for country in selected_countries]
+        for col in selected_columns:
             trace = go.Scatter(
-                x = exits.index,
-                y = exits[col],
-                mode = 'lines',
-                name = col)
+                x=exits.index,
+                y=exits[col],
+                mode='lines',
+                name=col
+            )
             data.append(trace)
         layout = go.Layout(
-            title = 'Line Plot Over Time',
-            xaxis = dict(title='Month'),
-            yaxis = dict(title='Value')
+            title='Line Plot Over Time',
+            xaxis=dict(title='Month'),
+            yaxis=dict(title='Value')
         )
-        figure = go.Figure(data={'data':data, 'layout':layout})
+        figure = go.Figure(data=data, layout=layout)
         return figure
     else:
         # Return a default empty graph if no country is selected
