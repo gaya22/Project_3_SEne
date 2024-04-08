@@ -5,7 +5,7 @@ Description: webpage runner that shows the study of the data.
 
 # Import the main libraries
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime
@@ -34,24 +34,25 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                 html.H2("Natural gas data analysis"), # Subtitle
                 html.Div(children=[ # Divide the webpage in 2 columns
                     html.Div(children=[ # Left part of the webpage
-                        html.P("Select a country to plot the outgoing and incoming natural gas flows"),
+                        html.P("Select a country to plot the outgoing or incoming natural gas flows"),
                         dcc.RadioItems(id="radio-from-to",
-                            options=[
-                                {'label': 'From', 'value': 'from'},
-                                {'label': 'To', 'value': 'to'}],
-                            value = 'from',
-                            inline=True),
+                                    options=[
+                                        {'label': 'Outgoing', 'value': 'from'},
+                                        {'label': 'Incoming', 'value': 'to'}],
+                                    value = 'from',
+                                    inline=True),
                         dcc.Graph(id="world-map",
                                   config={'scrollZoom': True},
                                   clickData={'points': []},
-                                  style={'width':'100%', 'height':'80vh'}),
+                                  style={'width':'100%', 'height':'65vh'}),
                     ], style={'width': '45%', 'float': 'left'}),
                     html.Div(children=[ # Right part of the webpage
+                        html.P(id="checklist-paragraph"),
                         dcc.Checklist(id = "checklist-country",
-                                      # options = update options based on the selected country on map
-                                      ),
+                                      # options = there is a callback that updates it (update_checklist_options)
+                                      inline=True),
                         dcc.Graph(id='selected_country_graph')
-                        ], style={'width': '55%', 'float': 'right'})
+                    ], style={'width': '55%', 'float': 'right'})
                 ])
             ])
         ]),
@@ -95,7 +96,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     [Input('world-map', 'clickData')]
 )
 def update_map(clickData):
-    selected_countries = [point['location'] for point in clickData['points']]
+    selected_country = [point['location'] for point in clickData['points']]
     return {
         'data': [go.Choropleth(
             locations=tot_flows.index,
@@ -107,7 +108,7 @@ def update_map(clickData):
             marker_line_color='black',
             marker_line_width=0.5,
             hoverinfo='text',
-            selectedpoints = selected_countries
+            selectedpoints = selected_country
         )],
         'layout': go.Layout(
             geo=dict(
@@ -118,48 +119,68 @@ def update_map(clickData):
         )
     }
 
+# Callback to update the string above the graph
+@app.callback(
+        Output('checklist-paragraph', 'children'),
+        Input('radio-from-to', 'value')
+)
+def update_paragraph(direction):
+    if direction == "from":
+        prep = 'to'
+    else:
+        prep = 'from'
+    return 'Select countries '+ prep + ' which natural gas flows'
+
 # Callback to update checklist options based on selected country
 @app.callback(
     Output('checklist-country', 'options'),
-    [Input('world-map', 'clickData')]
+    [Input('world-map', 'clickData'),
+     Input('radio-from-to', 'value')]
 )
-def update_checklist_options(clickData):
-    if clickData and 'points' in clickData and clickData['points']:
-        selected_country = clickData['points'][0]['location']
-        exits = af.exit_flows(selected_country, orig_df)
-        # Extract country names from column names
-        country_names = [col.split('to')[1] for col in exits.columns]
+def update_checklist_options(clickData, direction):
+    if clickData and 'points' in clickData and clickData['points']: # If the map is clicked
+        selected_country = clickData['points'][0]['location'] # selected_country defined
+        if direction == "from":
+            flow_df = af.exit_flows(selected_country, orig_df) # dataframe of the exit flows
+        else:
+            flow_df = af.entry_flows(selected_country, orig_df) # dataframe of the entry flows
+        country_names = flow_df.columns.values # Extract country names from column names
         options = [{'label': country, 'value': country} for country in country_names]
         return options
     else:
-        # Return empty options if no country is selected
-        return []
+        return [] # Return empty options if no country is selected
 
 # Callback to update graph based on selected country and checklist options
 @app.callback(
     Output('selected_country_graph', 'figure'),
     [Input('world-map', 'clickData'),
-     Input('checklist-country', 'value')]
+     Input('checklist-country', 'value'),
+     Input('radio-from-to', 'value')]
 )
-def update_country_graph(clickData, selected_countries):
+def update_country_graph(clickData, checked_countries, direction):
     if clickData and 'points' in clickData and clickData['points']:
         selected_country = clickData['points'][0]['location']
-        exits = af.exit_flows(selected_country, orig_df)
+        if direction == "from":
+            flow_df = af.exit_flows(selected_country, orig_df) # dataframe of the exit flows
+            prep = "from "
+        else:
+            flow_df = af.entry_flows(selected_country, orig_df) # dataframe of the entry flows
+            prep = "to "
         data = []
-        # Filter columns based on selected countries in the checklist
-        selected_columns = ['to' + country for country in selected_countries]
+        selected_columns = [item for item in checked_countries or []] # List created from "checked_countries" that is the same as the index of "exits"
         for col in selected_columns:
             trace = go.Scatter(
-                x=exits.index,
-                y=exits[col],
+                x=flow_df.index,
+                y=flow_df[col],
                 mode='lines',
-                name=col
+                name=col,
+                showlegend= True
             )
             data.append(trace)
         layout = go.Layout(
-            title='Line Plot Over Time',
+            title='Natural gas movements ' + prep + selected_country,
             xaxis=dict(title='Month'),
-            yaxis=dict(title='Value')
+            yaxis=dict(title='m³')
         )
         figure = go.Figure(data=data, layout=layout)
         return figure
