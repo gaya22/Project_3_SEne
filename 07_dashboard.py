@@ -40,7 +40,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                   style={'width':'100%', 'height':'80vh'}),
                     ], style={'width': '40%', 'display': 'inline-block'}),
                     html.Div(children=[ # Second column
-                        html.Div(id='selected_country_graph')
+                        dcc.Graph(id='selected_country_graph')
                         ], style={'width': '60%', 'display': 'inline-block'}
                     )
                 ])
@@ -117,18 +117,28 @@ def update_map(clickData):
 
 # Callback to update graph based on selected country
 @app.callback(
-    Output('selected_country_graph', 'children'),
+    Output('selected_country_graph', 'figure'),
     [Input('world-map', 'clickData')]
 )
 def update_country_graph(clickData):
-    if clickData and 'points' in clickData:
+    if clickData and 'points' in clickData and clickData['points']:
         selected_country = clickData['points'][0]['location']
-        # Add your code here to plot the graph based on selected_country
-        # Example code:
-        # filtered_df = orig_df[orig_df['Country'] == selected_country]
-        # graph_data = your_function_to_generate_graph_data(filtered_df)
-        # figure = go.Figure(data=graph_data)
-        # return figure
+        exits = af.exit_flows(selected_country, orig_df)
+        data = []
+        for col in exits.columns:
+            trace = go.Scatter(
+                x = exits.index,
+                y = exits[col],
+                mode = 'lines',
+                name = col)
+            data.append(trace)
+        layout = go.Layout(
+            title = 'Line Plot Over Time',
+            xaxis = dict(title='Month'),
+            yaxis = dict(title='Value')
+        )
+        figure = go.Figure(data={'data':data, 'layout':layout})
+        return figure
     else:
         # Return a default empty graph if no country is selected
         return {
