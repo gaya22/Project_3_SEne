@@ -5,13 +5,15 @@ Description: webpage runner that shows the study of the data.
 
 # Import the main libraries
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import plotly.graph_objs as go
 import pandas as pd
 import plotly.io as pio
-import os
+import dash_bootstrap_components as dbc
 import numpy as np
+from datetime import datetime
 import auxiliary_functions as af
+import callback_functions as cf
 
 # Load and prepare dataframes
 orig_df = pd.read_csv("GTF_export_cleaned.csv") # Upload the dataframe cleaned
@@ -48,13 +50,15 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                   config={'scrollZoom': True},
                                   clickData={'points': []},
                                   style={'width':'100%', 'height':'65vh'}),
-                    ], style={'width': '45%', 'float': 'left'}),
+                    ], style={'width': '43%', 'float': 'left'}),
                     html.Div(children=[ # Right part of the webpage
-                        html.P(id="checklist-paragraph"), # there is a callback that updates the paragraph (update_paragraph)
+                        html.P(id="checklist-paragraph"), # there is a callback that updates the paragraph (update_checklist_paragraph)
                         dcc.Checklist(id = "checklist-country",
                                       # options = there is a callback that updates it (update_checklist_options)
                                       inline=True),
-                        dcc.Graph(id='selected_country_graph'), # Graph of values
+                        dcc.Graph(id='selected_country_graph'), # Graph of values 
+                        html.P(id="time-range-parag"), # there is a callback that updates the paragraph (update_timerange_paragraph)
+                        html.P('Use the slider to modify the period'),
                         dcc.RangeSlider(id='date-range-slider',
                                         marks = None,
                                         min=0,
@@ -63,11 +67,13 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                         value=[0, len(date_range)-1], # Initial date range
                                         ),
                         html.Div([
-                            html.Button("Download figure", id="btn-download"),
-                            dcc.Download(id="download"),
-                            html.A("Download", id="download-link", download="figure.png", href="", target="_blank", style={'display':'none'})
+                            dbc.Button("Save figure", id="btn-save", className="mb-3", n_clicks=0), # Button to save figure
+                            dbc.Fade(  # Save figure button
+                                dbc.Card(dbc.CardBody(
+                                        html.P("The figure has been saved in the work directory as \"figure.png\"", className="card-text"))
+                                ), id="fade", is_in=False, appear=False), 
                         ])
-                    ], style={'width': '55%', 'float': 'right'})
+                    ], style={'width': '53%', 'float': 'right'})
                 ])
             ])
         ]),
@@ -139,7 +145,7 @@ def update_map(clickData):
         Output('checklist-paragraph', 'children'),
         Input('radio-from-to', 'value')
 )
-def update_paragraph(direction):
+def update_checklist_paragraph(direction):
     if direction == "from":
         prep = 'to'
     else:
@@ -197,7 +203,7 @@ def update_country_graph(clickData, checked_countries, direction, valuerange):
             )
             data.append(trace)
         layout = go.Layout(
-            title= f'Natural gas movements {prep, selected_country}',
+            title= f'Natural gas movements {prep} {selected_country}',
             xaxis=dict(title='Month'),
             yaxis=dict(title='m³')
         )
@@ -209,21 +215,36 @@ def update_country_graph(clickData, checked_countries, direction, valuerange):
             'data': [],
             'layout': {}
         }
-    
-# Callback to download figures
+
+# Callback to update the paragraph that shows the timerange chosen
 @app.callback(
-    Output("download", "data"),
-    [Input("btn-download", "n_clicks"),
-     Input("selected_country_graph", "figure")],
-    prevent_initial_call = True
+    Output("time-range-parag", "children"),
+    Input('date-range-slider', 'value')
 )
-def download_fig(n_clicks, figure):
-    if n_clicks is not None and figure:
-        pio.write_image(figure, "figure.png")
-        file_path = os.path.abspath("figure.png")
-        return dict(content=file_path, filename="figure.png")
+def update_timerange_paragraph(valuerange):
+    start_date = orig_df.index.values[valuerange[0]]
+    end_date = orig_df.index.values[valuerange[1]]
+    start = cf.get_month(start_date)
+    end = cf.get_month(end_date)
+    return f'Monthly data shown from {start} to {end}.'
+    
+        
+
+# Callback to save the figure and use the modal 
+@app.callback(
+    Output("fade", "is_in"),
+    [Input("btn-save", "n_clicks"),
+     Input("selected_country_graph", "figure")],
+    [State('fade', 'is_in')]
+)
+def toggle_modal(n, figure, is_in):
+    if not n:
+            return False
     else:
-        return dash.no_update
+        if figure is not None:
+            pio.write_image(figure, "figure.png")
+        return not is_in
+
 
 if __name__ == '__main__':
     app.run_server(debug = True)
