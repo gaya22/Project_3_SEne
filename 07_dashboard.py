@@ -10,8 +10,6 @@ import plotly.graph_objs as go
 import pandas as pd
 import plotly.io as pio
 import dash_bootstrap_components as dbc
-import numpy as np
-from datetime import datetime
 import auxiliary_functions as af
 
 # Load and prepare dataframes
@@ -77,7 +75,37 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
         dcc.Tab(label='Natural gas autocorrelation', children=[ # Second tab - Autocorrelation
             html.Div([
                 html.H2("Natural gas autocorrelation"),
-                html.P('CIAO'),
+                html.Div(children=[ # Divide the webpage in 2 columns
+                    html.Div(children=[ # First column (left part) that will be divided in 2 columns
+                        html.Div(children=[ # Left part of the webpage
+                            html.P('Select a country to study its flows of natural gas'),
+                            dcc.Dropdown(tot_flows.index.sort_values(), "Italy", id="dropdown-countries"),
+                            html.Div(children=[ # Divide the space into 2 columns for outgoing and incoming
+                                html.Div(html.P(id="outgoing-list"), style={'width': '50%', 'float': 'left'}),
+                                html.Div(html.P(id="incoming-list"), style={'width': '50%', 'float': 'right'})
+                            ])
+                        ], style={'width': '55%', 'float': 'left'}),
+                        html.Div(children=[ # Center part of the webpage
+                            # Here I put the options for the plot
+                            html.P('Select the option to study a specific relation or the total flow'),
+                            dcc.RadioItems(id="radio-spec-tot",
+                                    options=[
+                                        {'label': 'Flow related to a specific country', 'value': 'specific'},
+                                        {'label': 'Total flow', 'value': 'tot'}],
+                                    value = 'specific', inline=False),
+                            html.P('Select the direction'),
+                                dcc.RadioItems(id="radio-direction",
+                                    options=[
+                                        {'label': 'Outgoing', 'value': 'out'},
+                                        {'label': 'Incoming', 'value': 'in'},
+                                        {'label': 'Net flow', 'value': 'net'}],
+                                    value = 'out', inline=False),
+                        ], style={'width': '40%', 'float': 'right'})
+                    ], style={'width': '55%', 'float': 'left'}),
+                    html.Div(children=[ # Second column (right part) that hosts the graph
+                        dcc.Graph(id="autocorrelation")
+                    ], style={'width': '45%', 'float': 'right'})
+                ])
             ])
         ]),
 
@@ -224,6 +252,32 @@ def toggle_modal(n, figure, is_in):
         if figure is not None:
             pio.write_image(figure, "figure.png")
         return not is_in
+
+# Callback to update the outgoing flows of the country in the autocorrelation tab 
+@app.callback(
+    Output("outgoing-list", "children"),
+    Input("dropdown-countries", "value")
+)
+def update_relations_outgoing(country):
+    flow_df = af.exit_flows(country, orig_df)
+    country_names = flow_df.columns.values # Extract country names from column names
+    country_list_items = [html.Li(country_name) for country_name in country_names]
+    country_list = html.Ul(country_list_items)
+    paragraph = f'Natural gas flows from {country}:'
+    return html.Div([paragraph, country_list])
+
+# Callback to update the incoming flows of the country in the autocorrelation tab
+@app.callback(
+    Output("incoming-list", "children"),
+    Input("dropdown-countries", "value")
+)
+def update_relations_incoming(country):
+    flow_df = af.entry_flows(country, orig_df)
+    country_names = flow_df.columns.values # Extract country names from column names
+    country_list_items = [html.Li(country_name) for country_name in country_names]
+    country_list = html.Ul(country_list_items)
+    paragraph = f'Natural gas flows to {country}:'
+    return html.Div([paragraph, country_list])
 
 if __name__ == '__main__':
     app.run_server(debug = True)
