@@ -13,7 +13,6 @@ import dash_bootstrap_components as dbc
 import numpy as np
 from datetime import datetime
 import auxiliary_functions as af
-import callback_functions as cf
 
 # Load and prepare dataframes
 orig_df = pd.read_csv("GTF_export_cleaned.csv") # Upload the dataframe cleaned
@@ -59,12 +58,9 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                         dcc.Graph(id='selected_country_graph'), # Graph of values 
                         html.P(id="time-range-parag"), # there is a callback that updates the paragraph (update_timerange_paragraph)
                         html.P('Use the slider to modify the period'),
-                        dcc.RangeSlider(id='date-range-slider',
-                                        marks = None,
-                                        min=0,
-                                        max=len(date_range)-1,
-                                        step=1,
-                                        value=[0, len(date_range)-1], # Initial date range
+                        dcc.RangeSlider(id='date-range-slider', marks = None,
+                                        min=0, max=len(date_range)-1,
+                                        step=1, value=[0, len(date_range)-1], # Initial date range
                                         ),
                         html.Div([
                             dbc.Button("Save figure", id="btn-save", className="mb-3", n_clicks=0), # Button to save figure
@@ -161,10 +157,7 @@ def update_checklist_paragraph(direction):
 def update_checklist_options(clickData, direction):
     if clickData and 'points' in clickData and clickData['points']: # If the map is clicked
         selected_country = clickData['points'][0]['location'] # selected_country defined
-        if direction == "from":
-            flow_df = af.exit_flows(selected_country, orig_df) # dataframe of the exit flows
-        else:
-            flow_df = af.entry_flows(selected_country, orig_df) # dataframe of the entry flows
+        flow_df = af.flows_from_direction(selected_country, orig_df, direction) # function defined in auxiliary functions
         country_names = flow_df.columns.values # Extract country names from column names
         options = [{'label': country, 'value': country} for country in country_names]
         return options
@@ -182,38 +175,27 @@ def update_checklist_options(clickData, direction):
 def update_country_graph(clickData, checked_countries, direction, valuerange):
     if clickData and 'points' in clickData and clickData['points']:
         selected_country = clickData['points'][0]['location']
-        if direction == "from":
-            flow_df = af.exit_flows(selected_country, orig_df) # dataframe of the exit flows
-            prep = "from "
-        else:
-            flow_df = af.entry_flows(selected_country, orig_df) # dataframe of the entry flows
-            prep = "to "
+        flow_df = af.flows_from_direction(selected_country, orig_df, direction) # function defined in auxiliary functions
         start_date = flow_df.index.values[valuerange[0]]
         end_date = flow_df.index.values[valuerange[1]]
         flow_df = flow_df[start_date:end_date]
         data = []
         selected_columns = [item for item in checked_countries or []] # List created from "checked_countries" that is the same as the index of "exits"
-        for col in selected_columns:
-            trace = go.Scatter(
-                x=flow_df.index,
-                y=flow_df[col],
-                mode='lines',
-                name=col,
-                showlegend= True
-            )
+        for col in selected_columns: # Creating the graph
+            trace = go.Scatter(x=flow_df.index, y=flow_df[col], mode='lines',
+                name=col, showlegend= True)
             data.append(trace)
-        layout = go.Layout(
-            title= f'Natural gas movements {prep} {selected_country}',
+        layout = go.Layout( # Defining the layout of the graph
+            title= f'Natural gas movements {direction} {selected_country}',
             xaxis=dict(title='Month'),
             yaxis=dict(title='m³')
         )
         figure = go.Figure(data=data, layout=layout)
         return figure
     else:
-        # Return a default empty graph if no country is selected
-        return {
+        return { # Return a default empty graph if no country is selected
             'data': [],
-            'layout': {}
+            'layout': {} 
         }
 
 # Callback to update the paragraph that shows the timerange chosen
@@ -224,13 +206,11 @@ def update_country_graph(clickData, checked_countries, direction, valuerange):
 def update_timerange_paragraph(valuerange):
     start_date = orig_df.index.values[valuerange[0]]
     end_date = orig_df.index.values[valuerange[1]]
-    start = cf.get_month(start_date)
-    end = cf.get_month(end_date)
+    start = af.get_month(start_date)
+    end = af.get_month(end_date)
     return f'Monthly data shown from {start} to {end}.'
-    
-        
 
-# Callback to save the figure and use the modal 
+# Callback to save the figure and use the fade
 @app.callback(
     Output("fade", "is_in"),
     [Input("btn-save", "n_clicks"),
@@ -244,7 +224,6 @@ def toggle_modal(n, figure, is_in):
         if figure is not None:
             pio.write_image(figure, "figure.png")
         return not is_in
-
 
 if __name__ == '__main__':
     app.run_server(debug = True)

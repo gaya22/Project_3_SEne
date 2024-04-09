@@ -1,9 +1,11 @@
 """
 File: auxiliary_functions.py
-Description: home made libary with functions used in the main code.
+Description: home made libary with functions used in the main code and in the dashboard.
 """
 
-import pandas as pd 
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
 '''This function gives back a dataframe of all the outgoing flows of a country.
     It works only with the cleaned dataframe, that has date as index.'''
@@ -26,6 +28,18 @@ def entry_flows(country, df):
             if country in parts[1]:
                 en_flows["from " + parts[0]] = df[col]
     return en_flows
+
+'''This function takes the cleaned dataframe, a specific country and the direction.
+    The direction can be "outgoing"/"from" or "incoming"/"to".
+    It uses exit_flows or entry_flows functions depending on the argument "direction".'''
+def flows_from_direction(country, df, direction):
+    if direction == "from" or "outgoing":
+        flow_df = exit_flows(country, df) # dataframe of the exit flows
+    elif direction == "to" or "incoming":
+        flow_df = entry_flows(country, df) # dataframe of the entry flows
+    else:
+        flow_df = pd.DataFrame()
+    return flow_df
 
 '''This function just returns a list of all the countries involved in the study that have extit flows
     It works only with the cleaned dataframe, that has date as index.'''
@@ -70,3 +84,9 @@ def countries_tot_flows(df):
     tot_df["tot_enter_flows"] = mylist_enter # Assign the values of the enter list to the dataframe
     return tot_df
 
+'''This function takes a numpy.datetime64 date object
+    It returns a string with the month and the year'''
+def get_month(date64):
+    datetime_object = np.datetime_as_string(date64, unit='D')
+    date_as_datetime = datetime.strptime(datetime_object, '%Y-%m-%d')
+    return date_as_datetime.strftime("%B %Y")
