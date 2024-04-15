@@ -50,8 +50,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                     ], style={'width': '43%', 'float': 'left'}),
                     html.Div(children=[ # Right part of the webpage
                         html.P(id="checklist-paragraph"), # there is a callback that updates the paragraph (update_checklist_paragraph)
-                        dcc.Checklist(id = "checklist-country",
-                                      # options = there is a callback that updates it (update_checklist_options)
+                        dcc.Checklist(id = "checklist-country-1", # There is a callback that updates it (update_checklist_options)
                                       inline=True),
                         dcc.Graph(id='selected_country_graph'), # Graph of values 
                         html.P(id="time-range-parag"), # there is a callback that updates the paragraph (update_timerange_paragraph)
@@ -81,8 +80,9 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                             html.P('Select a country to study its flows of natural gas'),
                             dcc.Dropdown(tot_flows.index.sort_values(), "Italy", id="dropdown-countries"),
                             html.Div(children=[ # Divide the space into 2 columns for outgoing and incoming
-                                html.Div(html.P(id="outgoing-list"), style={'width': '50%', 'float': 'left'}),
-                                html.Div(html.P(id="incoming-list"), style={'width': '50%', 'float': 'right'})
+                                html.Div(html.P(id="outgoing-list"),  # The function update_relations_outgoing updates the list
+                                         style={'width': '50%', 'float': 'left'}),
+                                html.Div(html.P(id="incoming-list"), style={'width': '50%', 'float': 'right'}) # The function update_relations_incoming updates the list
                             ])
                         ], style={'width': '55%', 'float': 'left'}),
                         html.Div(children=[ # Center part of the webpage
@@ -93,17 +93,21 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                         {'label': 'Flow related to a specific country', 'value': 'specific'},
                                         {'label': 'Total flow', 'value': 'tot'}],
                                     value = 'specific', inline=False),
+                            html.Br(),
+                            dcc.RadioItems(id = "radio-countries", inline=True, style={'display':'none'}), # There is a callback that updates the options
+                            html.Br(),
                             html.P('Select the direction'),
-                                dcc.RadioItems(id="radio-direction",
-                                    options=[
-                                        {'label': 'Outgoing', 'value': 'out'},
-                                        {'label': 'Incoming', 'value': 'in'},
-                                        {'label': 'Net flow', 'value': 'net'}],
-                                    value = 'out', inline=False),
+                            dcc.RadioItems(id="radio-direction",
+                                options=[
+                                    {'label': 'Outgoing', 'value': 'from'},
+                                    {'label': 'Incoming', 'value': 'to'},
+                                    {'label': 'Net flow', 'value': 'net'}],
+                                value = 'out', inline=False),
+                            html.Br(),
                         ], style={'width': '40%', 'float': 'right'})
                     ], style={'width': '55%', 'float': 'left'}),
                     html.Div(children=[ # Second column (right part) that hosts the graph
-                        dcc.Graph(id="autocorrelation")
+                        dcc.Graph(id="autocorrelation_graph")
                     ], style={'width': '45%', 'float': 'right'})
                 ])
             ])
@@ -178,7 +182,7 @@ def update_checklist_paragraph(direction):
 
 # Callback to update checklist options based on selected country
 @app.callback(
-    Output('checklist-country', 'options'),
+    Output('checklist-country-1', 'options'),
     [Input('world-map', 'clickData'),
      Input('radio-from-to', 'value')]
 )
@@ -196,7 +200,7 @@ def update_checklist_options(clickData, direction):
 @app.callback(
     Output('selected_country_graph', 'figure'),
     [Input('world-map', 'clickData'),
-     Input('checklist-country', 'value'),
+     Input('checklist-country-1', 'value'),
      Input('radio-from-to', 'value'),
      Input('date-range-slider', 'value')]
 )
@@ -278,6 +282,35 @@ def update_relations_incoming(country):
     country_list = html.Ul(country_list_items)
     paragraph = f'Natural gas flows to {country}:'
     return html.Div([paragraph, country_list])
+
+# Callback to manage the radio item for the countries in the autocorrelation tab
+@app.callback(
+        [Output('radio-countries', 'options'),
+         Output('radio-countries', 'style')],
+        [Input('dropdown-countries', 'value'),
+         Input('radio-spec-tot', 'value'),
+         Input('radio-direction', 'value')]
+)
+def update_radio_countries(country, type, direction):
+    options = []
+    if type == "specific" and direction != "net":
+        flow_df = af.flows_from_direction(country, orig_df, direction)
+        country_names = flow_df.columns.values
+        options = [{'label': country, 'value': country} for country in country_names]
+        return options, {'display': 'block'}
+    else:
+        return options, {'display': 'none'}
+
+# Callback to update the autocorrelation graph
+@app.callback(
+    Output('autocorrelation_graph', 'figure'),
+    [Input('dropdown-countries', 'value'),
+     Input('radio-spec-tot', 'value'),
+     Input('radio-direction', 'value')]
+)
+def update_autocorrelation_graph(country, type, direction):
+    return None
+
 
 if __name__ == '__main__':
     app.run_server(debug = True)
