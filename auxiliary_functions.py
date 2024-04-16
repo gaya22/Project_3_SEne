@@ -30,30 +30,30 @@ def entry_flows(country, df):
     return en_flows
 
 '''This function takes the cleaned dataframe, a specific country and the direction.
-    The direction can be "outgoing"/"from" or "incoming"/"to".
+    The direction can be "outgoing"/"from" or "incoming"/"to" or "net".
     It uses exit_flows or entry_flows functions depending on the argument "direction".'''
 def flows_from_direction(country, df, direction):
     flow_exits = exit_flows(country, df)
     flow_entries = entry_flows(country, df)
-    if direction == "from" or "outgoing":
-        flow_df = flow_exits # dataframe of the exit flows
-    elif direction == "to" or "incoming":
-        flow_df = flow_entries # dataframe of the entry flows
+    if direction in ["from", "outgoing"]:
+        return flow_exits # dataframe of the exit flows
+    elif direction in ["to", "incoming"]:
+        return flow_entries # dataframe of the entry flows
     elif direction == "net":
-        entry_countries = set(flow_entries.columns.values)
-        exit_countries = set(flow_exits.columns.values)
+        flows = pd.DataFrame()
+        #entry_countries = set(flow_entries.columns.values)
+        #exit_countries = set(flow_exits.columns.values)
         flow_exits.columns = [col.split(' ', 1)[1] for col in flow_exits.columns]
         flow_entries.columns = [col.split(' ', 1)[1] for col in flow_entries.columns]
-        flow_df = pd.DataFrame(columns=entry_countries.union(exit_countries))
+        # flow_df = pd.DataFrame(columns=entry_countries.union(exit_countries))
         for col in flow_entries.intersection(flow_exits.columns):
-            flow_df[col] = flow_df[col] - flow_df[col]
+            flows[col] = flow_entries[col] - flow_exits[col]
         for col in flow_entries.difference(flow_exits.columns):
-            flow_df[col] = flow_entries[col]
+            flows[col] = flow_entries[col]
         for col in flow_exits.difference(flow_entries.columns):
-            flow_df[col] = -flow_exits[col]
+            flows[col] = -flow_exits[col]
     else:
-        flow_df = pd.DataFrame()
-    return flow_df
+        return pd.DataFrame()
 
 '''This function just returns a list of all the countries involved in the study that have extit flows
     It works only with the cleaned dataframe, that has date as index.'''
