@@ -7,6 +7,7 @@ Description: webpage runner that shows the study of the data.
 import dash
 from dash import dcc, html, Input, Output, State
 import plotly.graph_objs as go
+import plotly.express as px
 import pandas as pd
 import plotly.io as pio
 import dash_bootstrap_components as dbc
@@ -293,7 +294,7 @@ def update_relations_incoming(country):
 )
 def update_radio_countries(country, type, direction):
     options = []
-    if type == "specific" and direction != "net":
+    if type == "specific":
         flow_df = af.flows_from_direction(country, orig_df, direction)
         country_names = flow_df.columns.values
         options = [{'label': country, 'value': country} for country in country_names]
@@ -306,10 +307,16 @@ def update_radio_countries(country, type, direction):
     Output('autocorrelation_graph', 'figure'),
     [Input('dropdown-countries', 'value'),
      Input('radio-spec-tot', 'value'),
-     Input('radio-direction', 'value')]
+     Input('radio-direction', 'value'),
+     Input('radio-countries', 'value')]
 )
-def update_autocorrelation_graph(country, type, direction):
-    return None
+def update_autocorrelation_graph(country_1, type, direction, country_2):
+    if type == "specific":
+        if country_2 != None:
+            flow_df = af.flows_from_direction(country_1, orig_df, direction)
+    figure = px.scatter(x=[], y=[])
+    figure = go.Figure()
+    return figure
 
 
 if __name__ == '__main__':
