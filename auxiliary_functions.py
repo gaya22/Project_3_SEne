@@ -90,5 +90,3 @@ def get_month(date64):
     datetime_object = np.datetime_as_string(date64, unit='D')
     date_as_datetime = datetime.strptime(datetime_object, '%Y-%m-%d')
     return date_as_datetime.strftime("%B %Y")
- 
- # ciao
