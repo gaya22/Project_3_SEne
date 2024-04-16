@@ -33,10 +33,24 @@ def entry_flows(country, df):
     The direction can be "outgoing"/"from" or "incoming"/"to".
     It uses exit_flows or entry_flows functions depending on the argument "direction".'''
 def flows_from_direction(country, df, direction):
+    flow_exits = exit_flows(country, df)
+    flow_entries = entry_flows(country, df)
     if direction == "from" or "outgoing":
-        flow_df = exit_flows(country, df) # dataframe of the exit flows
+        flow_df = flow_exits # dataframe of the exit flows
     elif direction == "to" or "incoming":
-        flow_df = entry_flows(country, df) # dataframe of the entry flows
+        flow_df = flow_entries # dataframe of the entry flows
+    elif direction == "net":
+        entry_countries = set(flow_entries.columns.values)
+        exit_countries = set(flow_exits.columns.values)
+        flow_exits.columns = [col.split(' ', 1)[1] for col in flow_exits.columns]
+        flow_entries.columns = [col.split(' ', 1)[1] for col in flow_entries.columns]
+        flow_df = pd.DataFrame(columns=entry_countries.union(exit_countries))
+        for col in flow_entries.intersection(flow_exits.columns):
+            flow_df[col] = flow_df[col] - flow_df[col]
+        for col in flow_entries.difference(flow_exits.columns):
+            flow_df[col] = flow_entries[col]
+        for col in flow_exits.difference(flow_entries.columns):
+            flow_df[col] = -flow_exits[col]
     else:
         flow_df = pd.DataFrame()
     return flow_df
