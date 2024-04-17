@@ -40,18 +40,15 @@ def flows_from_direction(country, df, direction):
     elif direction in ["to", "incoming"]:
         return flow_entries # dataframe of the entry flows
     elif direction == "net":
-        flows = pd.DataFrame()
-        #entry_countries = set(flow_entries.columns.values)
-        #exit_countries = set(flow_exits.columns.values)
         flow_exits.columns = [col.split(' ', 1)[1] for col in flow_exits.columns]
         flow_entries.columns = [col.split(' ', 1)[1] for col in flow_entries.columns]
-        # flow_df = pd.DataFrame(columns=entry_countries.union(exit_countries))
-        for col in flow_entries.intersection(flow_exits.columns):
-            flows[col] = flow_entries[col] - flow_exits[col]
-        for col in flow_entries.difference(flow_exits.columns):
-            flows[col] = flow_entries[col]
-        for col in flow_exits.difference(flow_entries.columns):
-            flows[col] = -flow_exits[col]
+        flows = flow_entries.copy()
+        for col in flow_exits.columns:
+            if col in flows.columns: # If exit flow column exists in entry flows
+                flows[col] = flows[col] - flow_exits[col] # Calculate net flow
+            else:
+                flows[col] = -flow_exits[col]
+        return flows
     else:
         return pd.DataFrame()
 

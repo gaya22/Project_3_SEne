@@ -100,10 +100,10 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                             html.P('Select the direction'),
                             dcc.RadioItems(id='radio-direction',
                                 options=[
-                                    {'label': 'Outgoing', 'value': 'from'},
-                                    {'label': 'Incoming', 'value': 'to'},
+                                    {'label': 'Outgoing', 'value': 'outgoing'},
+                                    {'label': 'Incoming', 'value': 'incoming'},
                                     {'label': 'Net flow', 'value': 'net'}],
-                                value = 'out', inline=False),
+                                value = 'outgoing', inline=False),
                             html.Br(),
                         ], style={'width': '40%', 'float': 'right'})
                     ], style={'width': '55%', 'float': 'left'}),
@@ -316,14 +316,18 @@ def update_autocorrelation_graph(country_1, type, direction, country_2):
     if type == "specific":
         if country_2 != None:
             flows[country_2] = flow_df[country_2]
+            my_str = f' - {country_2}'
         else:
             return {}
     elif type == "tot":
         flows["total"] = flow_df.sum(axis=1)
+        my_str = ""
     flows['lagged'] = flows.iloc[:,0].shift(1)
     flows.dropna(inplace=True)
     figure = px.scatter(x=flows.iloc[:,0].values, y=flows['lagged'].values)
-    figure = go.Figure()
+    lab = f'Autocorrelation of {direction} flow of {country_1} {my_str}'
+    figure.update_layout(xaxis_title="Current Values", yaxis_title="Lagged Values",
+                         title=lab)
     return figure
 
 
