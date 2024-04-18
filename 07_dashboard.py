@@ -181,7 +181,7 @@ def update_checklist_paragraph(direction):
         prep = 'from'
     return 'Select countries '+ prep + ' which natural gas flows'
 
-# Callback to update checklist options based on selected country
+# Callback to update checklist options based on selected country and the direction
 @app.callback(
     Output('checklist-country-1', 'options'),
     [Input('world-map', 'clickData'),
