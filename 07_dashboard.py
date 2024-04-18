@@ -12,6 +12,7 @@ import pandas as pd
 import plotly.io as pio
 import dash_bootstrap_components as dbc
 import auxiliary_functions as af
+import statsmodels.api as sm
 
 # Load and prepare dataframes
 orig_df = pd.read_csv("GTF_export_cleaned.csv") # Upload the dataframe cleaned
@@ -108,7 +109,12 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                         ], style={'width': '40%', 'float': 'right'})
                     ], style={'width': '55%', 'float': 'left'}),
                     html.Div(children=[ # Second column (right part) that hosts the graph
-                        dcc.Graph(id="autocorrelation_graph")
+                        dcc.Graph(id="autocorrelation_graph"),
+                        dcc.RadioItems(id='radio-simple-partial', # To change the graph
+                                       options=[
+                                           {'label': 'Simple Autocorrelation', 'value': 'simple'},
+                                           {'label': 'Partial Autocorrelation', 'value': 'partial'}
+                                       ], value = 'simple', inline = True)
                     ], style={'width': '45%', 'float': 'right'})
                 ])
             ])
@@ -258,31 +264,20 @@ def toggle_modal(n, figure, is_in):
             pio.write_image(figure, "figure.png")
         return not is_in
 
-# Callback to update the outgoing flows of the country in the autocorrelation tab 
+# Callback to update the outgoing and incoming flows of the country in the autocorrelation tab 
 @app.callback(
-    Output("outgoing-list", "children"),
+    [Output("outgoing-list", "children"),
+     Output("incoming-list", "children")],
     Input("dropdown-countries", "value")
 )
 def update_relations_outgoing(country):
-    flow_df = af.exit_flows(country, orig_df)
-    country_names = flow_df.columns.values # Extract country names from column names
-    country_list_items = [html.Li(country_name) for country_name in country_names]
-    country_list = html.Ul(country_list_items)
-    paragraph = f'Natural gas flows from {country}:'
-    return html.Div([paragraph, country_list])
-
-# Callback to update the incoming flows of the country in the autocorrelation tab
-@app.callback(
-    Output("incoming-list", "children"),
-    Input("dropdown-countries", "value")
-)
-def update_relations_incoming(country):
-    flow_df = af.entry_flows(country, orig_df)
-    country_names = flow_df.columns.values # Extract country names from column names
-    country_list_items = [html.Li(country_name) for country_name in country_names]
-    country_list = html.Ul(country_list_items)
-    paragraph = f'Natural gas flows to {country}:'
-    return html.Div([paragraph, country_list])
+    flow_df_out = af.exit_flows(country, orig_df)
+    flow_df_in = af.entry_flows(country, orig_df)
+    country_list_out = af.list_of_columnnames(flow_df_out) # function that returns Ul list
+    country_list_in = af.list_of_columnnames(flow_df_in) # function that returns Ul list
+    par_out = f'Natural gas flows from {country}:'
+    par_in = f'Natural gas flows to {country}:'
+    return html.Div([par_out, country_list_out]), html.Div([par_in, country_list_in])
 
 # Callback to manage the radio item for the countries in the autocorrelation tab
 @app.callback(
@@ -308,26 +303,33 @@ def update_radio_countries(country, type, direction):
     [Input('dropdown-countries', 'value'),
      Input('radio-spec-tot', 'value'),
      Input('radio-direction', 'value'),
-     Input('radio-countries', 'value')]
+     Input('radio-countries', 'value'),
+     Input('radio-simple-partial', 'value')]
 )
-def update_autocorrelation_graph(country_1, type, direction, country_2):
-    flow_df = af.flows_from_direction(country_1, orig_df, direction)
-    flows = pd.DataFrame()
+def update_autocorrelation_graph(country_1, type, direction, country_2, corr):
+    flow_df = af.flows_from_direction(country_1, orig_df, direction) # Getting the dataframe specific of the selected conutry_1 and the direction
+    flows = pd.DataFrame() # Create a empty df that will be used for graph
     if type == "specific":
         if country_2 != None:
-            flows[country_2] = flow_df[country_2]
-            my_str = f' - {country_2}'
-        else:
+            flows[country_2] = flow_df[country_2] # Getting just the column of specific country_2
+            my_str = f' - {country_2}' # For the title of the graph
+        else: # Country_2 is not selected yet
             return {}
     elif type == "tot":
-        flows["total"] = flow_df.sum(axis=1)
-        my_str = ""
-    flows['lagged'] = flows.iloc[:,0].shift(1)
-    flows.dropna(inplace=True)
-    figure = px.scatter(x=flows.iloc[:,0].values, y=flows['lagged'].values)
-    lab = f'Autocorrelation of {direction} flow of {country_1} {my_str}'
-    figure.update_layout(xaxis_title="Current Values", yaxis_title="Lagged Values",
-                         title=lab)
+        flows["total"] = flow_df.sum(axis=1) # Sum each row
+        my_str = "" # For the title of the graph
+    lab = f'of {direction} flow of {country_1} {my_str}' # Creating reference for title
+    if corr == "simple":
+        flows['lagged'] = flows.iloc[:,0].shift(1) # Creating the second column of lagged value
+        flows.dropna(inplace=True)
+        figure = px.scatter(x=flows.iloc[:,0].values, y=flows['lagged'].values) # Creating graph
+        figure.update_layout(xaxis_title="Current Values", yaxis_title="Lagged Values (+1)",
+                            title=f'Simple Autocorrelation {lab}') # Putting the title and the labels
+    else: # Partial correlation is selected
+        pacf = sm.tsa.stattools.pacf(flows.iloc[:,0])
+        figure = px.line(x=list(range(len(pacf))), y=pacf,
+                         title=f'Partial Autocorrelation {lab}',
+                         labels={'x':'Lag', 'y':'Partial Autocorrelation'})
     return figure
 
 

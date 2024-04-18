@@ -6,6 +6,8 @@ Description: home made libary with functions used in the main code and in the da
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import dash
+from dash import html
 
 '''This function gives back a dataframe of all the outgoing flows of a country.
     It works only with the cleaned dataframe, that has date as index.'''
@@ -101,3 +103,10 @@ def get_month(date64):
     datetime_object = np.datetime_as_string(date64, unit='D')
     date_as_datetime = datetime.strptime(datetime_object, '%Y-%m-%d')
     return date_as_datetime.strftime("%B %Y")
+
+'''This function takes a dataframe and returns a html Ul list of the names of the columns'''
+def list_of_columnnames(df):
+    names = df.columns.values
+    list_items = [html.Li(name) for name in names]
+    return html.Ul(list_items)
+    
