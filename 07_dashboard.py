@@ -45,6 +45,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                                         {'label': 'Incoming', 'value': 'to'}],
                                     value = 'from',
                                     inline=True),
+                        dcc.Store(id='selected-country-store', data=["Italy"]),
                         dcc.Graph(id="world-map",
                                   config={'scrollZoom': True},
                                   clickData={'points': []},
@@ -146,34 +147,50 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
     ])
 ])
 
+# Callback to update the selected country in the store
+@app.callback(
+    Output('selected-country-store', 'data'),
+    [Input('world-map', 'clickData')],
+    [State('selected-country-store', 'data')]
+)
+def update_selected_country(clickData, current_country):
+    if clickData and 'points' in clickData and clickData['points']:
+        return clickData['points'][0]['location']
+    return current_country
+
 # App to be able to click in the map
 @app.callback(
     Output('world-map', 'figure'),
-    [Input('world-map', 'clickData')]
+    [Input('selected-country-store', 'data')]
 )
-def update_map(clickData):
-    selected_country = [point['location'] for point in clickData['points']]
-    return {
-        'data': [go.Choropleth(
-            locations=tot_flows.index,
-            z=tot_flows["tot_exit_flows"], # The color of the map is based on the exit flows
-            locationmode='country names',
-            text=tot_flows.index,
-            colorscale='Viridis',
-            autocolorscale=False,
-            marker_line_color='black',
-            marker_line_width=0.5,
-            hoverinfo='text',
-            selectedpoints = selected_country
-        )],
-        'layout': go.Layout(
-            geo=dict(
-                showframe=False,
-                showcoastlines=True,
-                projection_type='equirectangular'
+def update_map(selected_country):
+    if selected_country is not None:
+        return {
+            'data': [go.Choropleth(
+                locations=tot_flows.index,
+                z=tot_flows["tot_exit_flows"], # The color of the map is based on the exit flows
+                locationmode='country names',
+                text=tot_flows.index,
+                colorscale='Viridis',
+                autocolorscale=False,
+                marker_line_color='black',
+                marker_line_width=0.5,
+                hoverinfo='text',
+                selectedpoints = [selected_country]
+            )],
+            'layout': go.Layout(
+                geo=dict(
+                    showframe=False,
+                    showcoastlines=True,
+                    projection_type='equirectangular'
+                )
             )
-        )
-    }
+        }
+    else:
+        return {
+            'data': [],
+            'layout': {}
+        }
 
 # Callback to update the string above the graph
 @app.callback(
@@ -189,19 +206,20 @@ def update_checklist_paragraph(direction):
 
 # Callback to update checklist options based on selected country and the direction
 @app.callback(
-    Output('checklist-country-1', 'options'),
+    [Output('checklist-country-1', 'options'),
+     Output('checklist-country-1', 'value')],
     [Input('world-map', 'clickData'),
      Input('radio-from-to', 'value')]
 )
 def update_checklist_options(clickData, direction):
-    if clickData and 'points' in clickData and clickData['points']: # If the map is clicked
+    if clickData is not None and 'points' in clickData and clickData['points']: # If the map is clicked
         selected_country = clickData['points'][0]['location'] # selected_country defined
         flow_df = af.flows_from_direction(selected_country, orig_df, direction) # function defined in auxiliary functions
         country_names = flow_df.columns.values # Extract country names from column names
         options = [{'label': country, 'value': country} for country in country_names]
-        return options
+        return options, []
     else:
-        return [] # Return empty options if no country is selected
+        return [], [] # Return empty options if no country is selected
 
 # Callback to update graph based on selected country, checklist options and date range
 @app.callback(
@@ -212,25 +230,28 @@ def update_checklist_options(clickData, direction):
      Input('date-range-slider', 'value')]
 )
 def update_country_graph(clickData, checked_countries, direction, valuerange):
-    if clickData and 'points' in clickData and clickData['points']:
+    if clickData is not None and 'points' in clickData and clickData['points']:
         selected_country = clickData['points'][0]['location']
         flow_df = af.flows_from_direction(selected_country, orig_df, direction) # function defined in auxiliary functions
-        start_date = flow_df.index.values[valuerange[0]]
-        end_date = flow_df.index.values[valuerange[1]]
-        flow_df = flow_df[start_date:end_date]
-        data = []
-        selected_columns = [item for item in checked_countries or []] # List created from "checked_countries" that is the same as the index of "exits"
-        for col in selected_columns: # Creating the graph
-            trace = go.Scatter(x=flow_df.index, y=flow_df[col], mode='lines',
-                name=col, showlegend= True)
-            data.append(trace)
-        layout = go.Layout( # Defining the layout of the graph
-            title= f'Natural gas movements {direction} {selected_country}',
-            xaxis=dict(title='Month'),
-            yaxis=dict(title='m³')
-        )
-        figure = go.Figure(data=data, layout=layout)
-        return figure
+        if not flow_df.empty:
+            start_date = flow_df.index.values[valuerange[0]]
+            end_date = flow_df.index.values[valuerange[1]]
+            flow_df = flow_df[start_date:end_date]
+            data = []
+            selected_columns = [item for item in checked_countries or []] # List created from "checked_countries"
+            for col in selected_columns: # Creating the graph
+                trace = go.Scatter(x=flow_df.index, y=flow_df[col], mode='lines',
+                    name=col, showlegend= True)
+                data.append(trace)
+            layout = go.Layout( # Defining the layout of the graph
+                title= f'Natural gas movements {direction} {selected_country}',
+                xaxis=dict(title='Month'),
+                yaxis=dict(title='m³')
+            )
+            figure = go.Figure(data=data, layout=layout)
+            return figure
+        else:
+            return {'data': [], 'layout': {}}
     else:
         return { # Return a default empty graph if no country is selected
             'data': [],
