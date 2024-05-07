@@ -126,7 +126,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
         dcc.Tab(label='Features analysis', children=[ # Third tab - Exploring features
             html.Div(children=[
                 html.H2("Features analysis"), # Title of the page
-                html.P('This page shows data from Eurostat database, that can be correlated to the gas movements'),html.Br(),
+                html.P('This page shows data collected, that can be correlated to the gas movements'),html.Br(),
                 html.Div(children=[ # Left part of the page
                     html.P('Select the country'),
                     dcc.Dropdown(id='dropdown-country-2', options=af.get_country_feat_names(), multi=True),html.Br(),
@@ -153,12 +153,10 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
             ])
         ])
 
-        # We could put a sixth tab if the gas data are well autocorrelated, doing the forecast for the next years
-
     ])
 ])
 
-# Callback to update the selected country in the store
+#1 Callback to update the selected country in the store
 @app.callback(
     Output('selected-country-store', 'data'),
     [Input('world-map', 'clickData')],
@@ -169,7 +167,7 @@ def update_selected_country(clickData, current_country):
         return clickData['points'][0]['location']
     return current_country
 
-# App to be able to click in the map
+#1 App to be able to click in the map
 @app.callback(
     Output('world-map', 'figure'),
     [Input('selected-country-store', 'data')]
@@ -203,7 +201,7 @@ def update_map(selected_country):
             'layout': {}
         }
 
-# Callback to update the string above the graph
+#1 Callback to update the string above the graph
 @app.callback(
         Output('checklist-paragraph', 'children'),
         Input('radio-from-to', 'value')
@@ -215,7 +213,7 @@ def update_checklist_paragraph(direction):
         prep = 'from'
     return 'Select countries '+ prep + ' which natural gas flows'
 
-# Callback to update checklist options based on selected country and the direction
+#1 Callback to update checklist options based on selected country and the direction
 @app.callback(
     [Output('checklist-country-1', 'options'),
      Output('checklist-country-1', 'value')],
@@ -232,7 +230,7 @@ def update_checklist_options(clickData, direction):
     else:
         return [], [] # Return empty options if no country is selected
 
-# Callback to update graph based on selected country, checklist options and date range
+#1 Callback to update graph based on selected country, checklist options and date range
 @app.callback(
     Output('selected_country_graph', 'figure'),
     [Input('world-map', 'clickData'),
@@ -269,7 +267,7 @@ def update_country_graph(clickData, checked_countries, direction, valuerange):
             'layout': {} 
         }
 
-# Callback to update the paragraph that shows the timerange chosen
+#1 Callback to update the paragraph that shows the timerange chosen
 @app.callback(
     Output("time-range-parag", "children"),
     Input('date-range-slider', 'value')
@@ -281,7 +279,7 @@ def update_timerange_paragraph(valuerange):
     end = af.get_month(end_date)
     return f'Monthly data shown from {start} to {end}.'
 
-# Callback to save the figure and use the fade
+#1 Callback to save the figure and use the fade
 @app.callback(
     Output("fade", "is_in"),
     [Input("btn-save", "n_clicks"),
@@ -296,7 +294,7 @@ def toggle_modal(n, figure, is_in):
             pio.write_image(figure, "figure.png")
         return not is_in
 
-# Callback to update the outgoing and incoming flows of the country in the autocorrelation tab 
+#2 Callback to update the outgoing and incoming flows of the country in the autocorrelation tab 
 @app.callback(
     [Output("outgoing-list", "children"),
      Output("incoming-list", "children")],
@@ -311,7 +309,7 @@ def update_relations_outgoing(country):
     par_in = f'Natural gas flows to {country}:'
     return html.Div([par_out, country_list_out]), html.Div([par_in, country_list_in])
 
-# Callback to manage the radio item for the countries in the autocorrelation tab
+#2 Callback to manage the radio item for the countries in the autocorrelation tab
 @app.callback(
         [Output('radio-countries', 'options'),
          Output('radio-countries', 'style')],
@@ -329,7 +327,7 @@ def update_radio_countries(country, type, direction):
     else:
         return options, {'display': 'none'}
 
-# Callback to update the autocorrelation graph
+#2 Callback to update the autocorrelation graph
 @app.callback(
     Output('autocorrelation_graph', 'figure'),
     [Input('dropdown-countries', 'value'),
@@ -339,10 +337,12 @@ def update_radio_countries(country, type, direction):
      Input('radio-simple-partial', 'value')]
 )
 def update_autocorrelation_graph(country_1, type, direction, country_2, corr):
+    if None in [country_1, type, direction, country_2, corr]:
+        return {}  # Return an empty figure if any input is None
     flow_df = af.flows_from_direction(country_1, orig_df, direction) # Getting the dataframe specific of the selected conutry_1 and the direction
     flows = pd.DataFrame() # Create a empty df that will be used for graph
     if type == "specific":
-        if country_2 != None:
+        if country_2 != None: # Country_2 is selected
             flows[country_2] = flow_df[country_2] # Getting just the column of specific country_2
             my_str = f' - {country_2}' # For the title of the graph
         else: # Country_2 is not selected yet
@@ -364,7 +364,7 @@ def update_autocorrelation_graph(country_1, type, direction, country_2, corr):
                          labels={'x':'Lag', 'y':'Partial Autocorrelation'})
     return figure
 
-# Callback to update the feature analysis graph
+#3 Callback to update the feature analysis graph
 @app.callback(
     Output('features-graph', 'figure'),
     [Input('dropdown-country-2', 'value'),
