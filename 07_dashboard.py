@@ -22,7 +22,9 @@ date_range = orig_df.index.values # Array of all the dates
 tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countries (as index) and the total exit/enter flows of the whole period
 exit_flow_countries = af.get_exit_countries(orig_df) # List of all the countries involved in the study that have extit flows
 enter_flow_countries = af.get_enter_countries(orig_df) # list of all the countries involved in the study that have entry flows
-feat_df = pd.read_csv("CleanData.csv") # Dataframe by eurostat of possible features
+feat_df = pd.read_csv("CleanData.csv") # Dataframe of possible features collected
+feat_df.loc[:,'date'] = pd.to_datetime(feat_df.loc[:,'date'][:-1],format='%Y-%m').dt.strftime('%Y-%m') #Reinstating the index 
+feat_df.set_index(['country','date'], inplace=True)
 
 # Creating the dashboard
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -127,13 +129,13 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                 html.P('This page shows data from Eurostat database, that can be correlated to the gas movements'),html.Br(),
                 html.Div(children=[ # Left part of the page
                     html.P('Select the country'),
-                    dcc.Checklist(id='checklist-country-2'),html.Br(),
+                    dcc.Dropdown(id='dropdown-country-2', options=af.get_country_feat_names(), multi=True),html.Br(),
                     html.P('Select the topic'),
-                    dcc.Checklist(id='checklist-topic')
-                ], style={'width': '20%', 'float': 'left'}),
+                    dcc.Checklist(id='dropdown-topic', options=feat_df.columns.to_list())
+                ], style={'width': '18%', 'float': 'left'}),
                 html.Div(children=[
                     dcc.Graph(id='features-graph')
-                ], style={'width': '80%', 'float': 'right'})
+                ], style={'width': '82%', 'float': 'right'})
             ])
         ]),
 
@@ -360,6 +362,33 @@ def update_autocorrelation_graph(country_1, type, direction, country_2, corr):
         figure = px.line(x=list(range(len(pacf))), y=pacf,
                          title=f'Partial Autocorrelation {lab}',
                          labels={'x':'Lag', 'y':'Partial Autocorrelation'})
+    return figure
+
+# Callback to update the feature analysis graph
+@app.callback(
+    Output('features-graph', 'figure'),
+    [Input('dropdown-country-2', 'value'),
+     Input('dropdown-topic', 'value')]
+)
+def update_features_graph(countries, topics):
+    df1 = pd.DataFrame()
+    if countries is not None and topics is not None:
+        for countr in countries:
+            cod = next(key for key, value in af.country_mapping.items() if value == countr)
+            for top in topics:
+                colname = countr + " - " + top
+                df1[colname] = feat_df.loc[(cod, slice(None)), top]
+        data = []
+        for col in df1:
+            trace = go.Scatter(x=df1.index, y=df1[col], mode='lines',
+                               name=col, showlegend=True)
+            data.append(trace)
+        layout=go.Layout(
+            title='Features exploring',
+            xaxis=dict(title='Month')
+        )
+        figure = go.Figure(data=data, layout=layout)
+    else: figure = {'data':[], 'layout': {}}
     return figure
 
 
