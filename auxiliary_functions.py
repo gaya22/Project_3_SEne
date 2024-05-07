@@ -110,3 +110,51 @@ def list_of_columnnames(df):
     list_items = [html.Li(name) for name in names]
     return html.Ul(list_items)
     
+'''This function gives back the'''
+def name_countries():
+    country_mapping = {
+        'AL': 'Albania',
+        'AT': 'Austria',
+        'BA': 'Bosnia and Herzegovina',
+        'BE': 'Belgium',
+        'BG': 'Bulgaria',
+        'CH': 'Switzerland',
+        'CY': 'Cyprus',
+        'CZ': 'Czech Republic',
+        'DE': 'Germany',
+        'DK': 'Denmark',
+        'EE': 'Estonia',
+        'EL': 'Greece',
+        'ES': 'Spain',
+        'FI': 'Finland',
+        'FR': 'France',
+        'HR': 'Croatia',
+        'HU': 'Hungary',
+        'IE': 'Ireland',
+        'IS': 'Iceland',
+        'IT': 'Italy',
+        'LI': 'Liechtenstein',
+        'LT': 'Lithuania',
+        'LU': 'Luxembourg',
+        'LV': 'Latvia',
+        'ME': 'Montenegro',
+        'MK': 'North Macedonia',
+        'MT': 'Malta',
+        'NL': 'Netherlands',
+        'NO': 'Norway',
+        'PL': 'Poland',
+        'PT': 'Portugal',
+        'RO': 'Romania',
+        'RU': 'Russia',
+        'RS': 'Serbia',
+        'SE': 'Sweden',
+        'SI': 'Slovenia',
+        'SK': 'Slovakia',
+        'TR': 'Turkey',
+        'UK': 'United Kingdom',
+        'XK': 'Kosovo',
+        'UA': 'Ukraine',
+        'GE': 'Georgia',
+        'MD': 'Moldova'
+    }
+    return country_mapping

@@ -22,6 +22,7 @@ date_range = orig_df.index.values # Array of all the dates
 tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countries (as index) and the total exit/enter flows of the whole period
 exit_flow_countries = af.get_exit_countries(orig_df) # List of all the countries involved in the study that have extit flows
 enter_flow_countries = af.get_enter_countries(orig_df) # list of all the countries involved in the study that have entry flows
+feat_df = pd.read_csv("CleanData.csv") # Dataframe by eurostat of possible features
 
 # Creating the dashboard
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -30,7 +31,7 @@ server = app.server
 
 # Creating the layout of the dashboard
 app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
-    html.H1('Natural gas imports and exports'), # Title of the webpage
+    html.H1('Natural gas movements analysis'), # Title of the webpage
     html.Div(id='df_total', style={'display': 'none'}), # Content of the webpage
     dcc.Tabs(id='tabs', value='tab-1', children=[ # Container of tabs
         dcc.Tab(label='Natural gas data analysis', children=[ # First tab - Data analysis
@@ -89,7 +90,6 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                             ])
                         ], style={'width': '55%', 'float': 'left'}),
                         html.Div(children=[ # Center part of the webpage
-                            # Here I put the options for the plot
                             html.P('Select the option to study a specific relation or the total flow'),
                             dcc.RadioItems(id="radio-spec-tot",
                                     options=[
@@ -121,10 +121,19 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
             ])
         ]),
 
-        dcc.Tab(label='Features correlation', children=[ # Third tab - Features correlation
-            html.Div([
-                html.H2("Features correlation"),
-                html.P('BLABLA'),
+        dcc.Tab(label='Features analysis', children=[ # Third tab - Exploring features
+            html.Div(children=[
+                html.H2("Features analysis"), # Title of the page
+                html.P('This page shows data from Eurostat database, that can be correlated to the gas movements'),html.Br(),
+                html.Div(children=[ # Left part of the page
+                    html.P('Select the country'),
+                    dcc.Checklist(id='checklist-country-2'),html.Br(),
+                    html.P('Select the topic'),
+                    dcc.Checklist(id='checklist-topic')
+                ], style={'width': '20%', 'float': 'left'}),
+                html.Div(children=[
+                    dcc.Graph(id='features-graph')
+                ], style={'width': '80%', 'float': 'right'})
             ])
         ]),
 
