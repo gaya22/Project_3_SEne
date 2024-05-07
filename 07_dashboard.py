@@ -23,7 +23,7 @@ tot_flows = af.countries_tot_flows(orig_df) # Dataframe with all af the countrie
 exit_flow_countries = af.get_exit_countries(orig_df) # List of all the countries involved in the study that have extit flows
 enter_flow_countries = af.get_enter_countries(orig_df) # list of all the countries involved in the study that have entry flows
 feat_df = pd.read_csv("CleanData.csv") # Dataframe of possible features collected
-feat_df.loc[:,'date'] = pd.to_datetime(feat_df.loc[:,'date'][:-1],format='%Y-%m').dt.strftime('%Y-%m') #Reinstating the index 
+feat_df.loc[:,'date'] = pd.to_datetime(feat_df.loc[:,'date'][:-1]) #Reinstating the index 
 feat_df.set_index(['country','date'], inplace=True)
 
 # Creating the dashboard
@@ -371,13 +371,15 @@ def update_autocorrelation_graph(country_1, type, direction, country_2, corr):
      Input('dropdown-topic', 'value')]
 )
 def update_features_graph(countries, topics):
-    df1 = pd.DataFrame()
+    df1 = pd.DataFrame(index=feat_df.index.get_level_values('date').unique().tolist())
     if countries is not None and topics is not None:
         for countr in countries:
             cod = next(key for key, value in af.country_mapping.items() if value == countr)
             for top in topics:
                 colname = countr + " - " + top
-                df1[colname] = feat_df.loc[(cod, slice(None)), top]
+                result = feat_df.loc[(cod, slice(None)), top]
+                result.index = result.index.droplevel('country')
+                df1[colname] = result
         data = []
         for col in df1:
             trace = go.Scatter(x=df1.index, y=df1[col], mode='lines',
