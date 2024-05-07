@@ -312,7 +312,8 @@ def update_relations_outgoing(country):
 #2 Callback to manage the radio item for the countries in the autocorrelation tab
 @app.callback(
         [Output('radio-countries', 'options'),
-         Output('radio-countries', 'style')],
+         Output('radio-countries', 'style'),
+         Output('radio-countries', 'value')],
         [Input('dropdown-countries', 'value'),
          Input('radio-spec-tot', 'value'),
          Input('radio-direction', 'value')]
@@ -323,9 +324,9 @@ def update_radio_countries(country, type, direction):
         flow_df = af.flows_from_direction(country, orig_df, direction)
         country_names = flow_df.columns.values
         options = [{'label': country, 'value': country} for country in country_names]
-        return options, {'display': 'block'}
+        return options, {'display': 'block'}, None
     else:
-        return options, {'display': 'none'}
+        return options, {'display': 'none'}, None
 
 #2 Callback to update the autocorrelation graph
 @app.callback(
