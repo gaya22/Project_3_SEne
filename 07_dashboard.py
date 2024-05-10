@@ -175,9 +175,10 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
             ])
         ]),
 
-        dcc.Tab(label='Russo-Ukrainian War', children=[ # Fifth tab - Russo-Ukrainian War
+        dcc.Tab(label='Russo-Ukrainian War impact on Italy data', children=[ # Fifth tab - Russo-Ukrainian War
             html.Div([
-                html.H2("Russo-Ukrainian War impact"),
+                html.H2("Russo-Ukrainian war impact on Italian Gas movements"),
+                html.P(''),
                 html.P('che merda Putin'),
             ])
         ])
