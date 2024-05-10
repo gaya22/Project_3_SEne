@@ -6,6 +6,7 @@ Description: webpage runner that shows the study of the data.
 # Import the main libraries
 import dash
 from dash import dcc, html, dash_table, Input, Output, State
+import dash_daq as daq
 import plotly.graph_objs as go
 import plotly.express as px
 import pandas as pd
@@ -166,7 +167,8 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                         dcc.Checklist(id='check-ita-data',
                                        options=dfIT.columns,
                                        inline=True),
-                        dcc.Graph(id='italy-features-graph')
+                        dcc.Graph(id='italy-features-graph'),
+                        daq.BooleanSwitch(id='normal-switch',on=True, label='Normalize (ON)', labelPosition='top'),
                     ], style={'width':'55%', 'float':'right', 'margin-top':'50px'})
                 ])
                 
@@ -426,13 +428,17 @@ def update_features_graph(countries, topics):
 #4 Callback to update the graph of Italy features
 @app.callback(
     Output('italy-features-graph', 'figure'),
-    Input('check-ita-data', 'value')
+    [Input('check-ita-data', 'value'),
+     Input('normal-switch', 'on')]
 )
-def features_italy_graph(topic):
+def features_italy_graph(topic, on):
     data = []
     layout = {}
-    dfIT1 = dfIT[topic]
     if topic is not None:
+        dfIT1 = dfIT[topic]
+        if on:
+            for column in dfIT1.columns:
+                dfIT1.loc[:,column] = (dfIT1.loc[:,column] - dfIT1.loc[:,column].min())/(dfIT1.loc[:,column].max() - dfIT1.loc[:,column].min())
         for col in dfIT1:
             trace = go.Scatter(x=dfIT1.index, y=dfIT1[col], mode='lines',
                                name=col, showlegend=True)
@@ -443,6 +449,7 @@ def features_italy_graph(topic):
             height=600
         )
     figure = go.Figure(data=data, layout=layout)
+    
     return figure
 
 if __name__ == '__main__':
