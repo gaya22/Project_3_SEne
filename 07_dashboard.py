@@ -177,7 +177,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
 
         dcc.Tab(label='Russo-Ukrainian War impact on Italy data', children=[ # Fifth tab - Russo-Ukrainian War
             html.Div([
-                html.H2("Russo-Ukrainian war impact on Italian Gas movements"),
+                html.H2("Russo-Ukrainian war impact on Italian Gas total imports"),
                 html.P('As all of us might expect, the Russian-Ukrainin conflict coused a change in the trend of natural gas movement data.'),
                 html.P('The aim of this section is to show how data changed, compared to how they would have been without this event. '),
                 html.P(af.forecast_introduction())
