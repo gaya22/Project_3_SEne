@@ -473,6 +473,27 @@ def final_features_graph(feats):
     layout = {}
     if feats is not None:
         df1 = "qui seguo lo stesso stile del callback precedente"
+        layout = go.Layout(
+            xaxis=dict(title='Months before and after 2020'),
+            legend = dict(y=1.02, yanchor='top', x=0),
+            height=600,
+            shapes=[
+                    dict(
+                    type='line',
+                    x0='2020-01-01',
+                    x1='2020-01-01',
+                    y0=0,
+                    y1=1,
+                    xref='x',
+                    yref='paper',
+                    line=dict(
+                        color='red',
+                        width=2,
+                        dash='dashdot',
+                    )
+                )
+            ]
+        )
     figure = go.Figure(data=data, layout=layout)
     return figure
 
