@@ -171,16 +171,26 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                         daq.BooleanSwitch(id='normal-switch',on=True, label='Normalize (ON)', labelPosition='top'),
                     ], style={'width':'55%', 'float':'right', 'margin-top':'50px'})
                 ])
-                
             ])
         ]),
 
-        dcc.Tab(label='Russo-Ukrainian War impact on Italy data', children=[ # Fifth tab - Russo-Ukrainian War
+        dcc.Tab(label='Covid-19 and Russo-Ukrainian War impact on Italy data', children=[ # Fifth tab - 2020 changes
             html.Div([
-                html.H2("Russo-Ukrainian war impact on Italian Gas total imports"),
-                html.P('As all of us might expect, the Russian-Ukrainin conflict coused a change in the trend of natural gas movement data.'),
-                html.P('The aim of this section is to show how data changed, compared to how they would have been without this event. '),
-                html.P(af.forecast_introduction())
+                html.H2("Covid-19 and Russo-Ukrainian war impact on Italian Gas total imports"),
+                html.P(af.forecast_introduction()), # Paragraph of the introduction
+                html.Div(children=[
+                    html.Div(children=[ # Left part of the webpage containing features
+                        html.P('In the graph is shown the total Gas Imported, that will be the object of the forecast. The features can be selected to be shown, already autoregressed. '),
+                        dcc.Checklist(id='check-features',
+                                       options=dfIT.columns, #DA CAMBIARE
+                                       inline=True),
+                        dcc.Graph(id='autoregr-features-graph'),
+                    ], style={'width':'50%', 'float':'left', 'margin-top':'50px'}),
+                    html.Div(children=[ # Right part of the webpage containing the result
+                        html.P('In this graph, just data from 2020 onwords are shown. Here we can appreciate the changings that the two events coused. '),
+                        dcc.Graph(id='results-graph'),
+                    ], style={'width':'47%', 'float':'right', 'margin-top':'50px'})
+                ])
             ])
         ])
 
@@ -451,7 +461,40 @@ def features_italy_graph(topic, on):
             height=600
         )
     figure = go.Figure(data=data, layout=layout)
-    
+    return figure
+
+#5 Callback to update the features graph
+@app.callback(
+    Output('autoregr-features-graph', 'fugure'),
+    [Input('check-features', 'value')]
+)
+def final_features_graph(feats):
+    data = [go.Scatter()] # Gas import that is fixed in the graph
+    layout = {}
+    if feats is not None:
+        df1 = "qui seguo lo stesso stile del callback precedente"
+        layout = go.Layout(
+            xaxis=dict(title='Months before and after 2020'),
+            legend = dict(y=1.02, yanchor='top', x=0),
+            height=600,
+            shapes=[
+                    dict(
+                    type='line',
+                    x0='2020-01-01',
+                    x1='2020-01-01',
+                    y0=0,
+                    y1=1,
+                    xref='x',
+                    yref='paper',
+                    line=dict(
+                        color='red',
+                        width=2,
+                        dash='dashdot',
+                    )
+                )
+            ]
+        )
+    figure = go.Figure(data=data, layout=layout)
     return figure
 
 if __name__ == '__main__':
