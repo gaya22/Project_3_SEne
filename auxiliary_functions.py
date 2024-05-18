@@ -204,7 +204,9 @@ def considerations():
 '''This function is created just to remove some code from the dashboard.
     It contains a portion of text that will be shown in the webpage (Russo-Ukrainian war impact)'''
 def forecast_introduction():
-    mystr = 'This comparison will be done through a forecast of data from 2022 onwards. To address that, the most important features were selected, and some others were created. '
-    mystr += 'The data used for the forecast has to be necessarily without the war influence, so for some features, autoregression has been used. '
-    mystr+= 'From the previous analysis, we know that gas consumption and gas stocks are periodic and well autocorrelated, and as such we can employ an autoregression model to forecast their values from 2022 to today. '
+    mystr = 'In the past four years, Europe has seen two big events that have changed the natural gas consumption and movements. '
+    mystr += 'The aim of this section is to show how Italian data changed, compared to how they would have been without these events. '
+    mystr += 'This comparison will be done through a forecast of data from 2020 onwards. To address that, the most important features were selected, and some others were created. '
+    mystr += 'The data used for the forecast has to be necessarily without the two events influence, so for some features, autoregression has been used. '
+    mystr += 'The imports data are chosen, but this study can be done for every variable shown in the previous tabs. '
     return mystr
