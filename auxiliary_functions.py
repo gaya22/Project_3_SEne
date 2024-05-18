@@ -6,8 +6,8 @@ Description: home made libary with functions used in the main code and in the da
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import dash
 from dash import html
+import plotly.graph_objs as go
 
 country_mapping = {
     'AL': 'Albania',
@@ -210,3 +210,25 @@ def forecast_introduction():
     mystr += 'The data used for the forecast has to be necessarily without the two events influence, so for some features, autoregression has been used. '
     mystr += 'The imports data are chosen, but this study can be done for every variable shown in the previous tabs. '
     return mystr
+
+'''This function gives back a dictionary with data and layout to put inside go.Figure for the dashboard'''
+def final_results_graph_parameters(df1, df2):
+    data = []
+    df = pd.DataFrame()
+    df["Real"] = df1.loc[df1.index >'2020-01-01']["Gas imported Mm3"]
+    df["Predicted"] = df2.loc[df2.index >'2020-01-01']["Gas imported Mm3"]
+    for col in df:
+        trace = go.Scatter(x=df.index, y=df[col], mode='lines', name=col, showlegend=True)
+        data.append(trace)
+    layout = go.Layout(
+        xaxis=dict(title='Month'),
+        legend = dict(y=1.02, yanchor='top', x=0),
+        height=600,
+        shapes=[
+            dict(type='line', x0='2020-01-01', x1='2020-01-01', y0=0, y1=1,
+                xref='x',yref='paper', line=dict(color='red', width=2,dash='dashdot',)),
+            dict(type='line', x0='2022-01-01', x1='2022-01-01', y0=0, y1=1,
+                xref='x',yref='paper', line=dict(color='red', width=2,dash='dashdot',)),
+        ]
+    )
+    return {'data': data, 'layout': layout}

@@ -29,6 +29,9 @@ feat_df.set_index(['country','date'], inplace=True)
 dfIT = pd.read_csv('Data_03.csv') # Dataframe of Italy data
 dfIT["date"] = pd.to_datetime(dfIT["date"], format="mixed") # Re-setting the date as datetime object
 dfIT = dfIT.set_index("date", drop=True) # Re-setting the month as index
+df_fin = pd.read_csv('Data_05.csv') # Final data
+df_fin["date"] = pd.to_datetime(df_fin["date"], format="mixed") # Re-setting the date as datetime object
+df_fin = df_fin.set_index("date", drop=True) # Re-setting the month as index
 
 # Creating the dashboard
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -182,13 +185,12 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                     html.Div(children=[ # Left part of the webpage containing features
                         html.P('In the graph is shown the total Gas Imported, that will be the object of the forecast. The features can be selected to be shown, already autoregressed. '),
                         dcc.Checklist(id='check-features',
-                                       options=dfIT.columns, #DA CAMBIARE
-                                       inline=True),
+                                       options=df_fin.drop(columns=['Gas imported Mm3']).columns, inline=True),
                         dcc.Graph(id='autoregr-features-graph'),
                     ], style={'width':'50%', 'float':'left', 'margin-top':'50px'}),
                     html.Div(children=[ # Right part of the webpage containing the result
                         html.P('In this graph, just data from 2020 onwords are shown. Here we can appreciate the changings that the two events coused. '),
-                        dcc.Graph(id='results-graph'),
+                        dcc.Graph(id='results-graph', figure=go.Figure(af.final_results_graph_parameters(dfIT, df_fin))),
                     ], style={'width':'47%', 'float':'right', 'margin-top':'50px'})
                 ])
             ])
@@ -465,33 +467,27 @@ def features_italy_graph(topic, on):
 
 #5 Callback to update the features graph
 @app.callback(
-    Output('autoregr-features-graph', 'fugure'),
+    Output('autoregr-features-graph', 'figure'),
     [Input('check-features', 'value')]
 )
 def final_features_graph(feats):
-    data = [go.Scatter()] # Gas import that is fixed in the graph
+    data = [go.Scatter(x=df_fin.index, y=df_fin.loc[df_fin.index <'2020-01-01']["Gas imported Mm3"],
+                       mode='lines', name="Gas import Mm3", showlegend=True)] # Gas import that is fixed in the graph
     layout = {}
     if feats is not None:
-        df1 = "qui seguo lo stesso stile del callback precedente"
+        df1 = df_fin[feats]
+        for col in df1:
+            trace = go.Scatter(x=df1.index, y=df1[col], mode='lines', name=col, showlegend=True)
+            data.append(trace)
         layout = go.Layout(
-            xaxis=dict(title='Months before and after 2020'),
+            xaxis=dict(title='Month'),
             legend = dict(y=1.02, yanchor='top', x=0),
             height=600,
             shapes=[
-                    dict(
-                    type='line',
-                    x0='2020-01-01',
-                    x1='2020-01-01',
-                    y0=0,
-                    y1=1,
-                    xref='x',
-                    yref='paper',
-                    line=dict(
-                        color='red',
-                        width=2,
-                        dash='dashdot',
-                    )
-                )
+                dict(type='line', x0='2020-01-01', x1='2020-01-01', y0=0, y1=1,
+                    xref='x',yref='paper', line=dict(color='red', width=2,dash='dashdot',)),
+                dict(type='line', x0='2022-01-01', x1='2022-01-01', y0=0, y1=1,
+                    xref='x',yref='paper', line=dict(color='red', width=2,dash='dashdot',)),
             ]
         )
     figure = go.Figure(data=data, layout=layout)
