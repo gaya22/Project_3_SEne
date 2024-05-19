@@ -61,7 +61,7 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                 html.H2("Natural gas data analysis"), # Subtitle
                 html.Div(children=[ # Divide the webpage in 2 columns
                     html.Div(children=[ # Left part of the webpage
-                        html.P("Select a country to plot the outgoing or incoming natural gas flows"),
+                        html.P("Select a country to plot the outgoing or incoming natural gas flows (the colors show the total outgoing flows of the countries)"),
                         dcc.RadioItems(id="radio-from-to",
                                     options=[
                                         {'label': 'Outgoing', 'value': 'from'},
