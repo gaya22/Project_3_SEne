@@ -499,7 +499,7 @@ def final_features_graph(feats):
             shapes=[
                 dict(type='line', x0='2020-01-01', x1='2020-01-01', y0=0, y1=1,
                     xref='x',yref='paper', line=dict(color='red', width=2,dash='dashdot',)),
-                dict(type='line', x0='2022-01-01', x1='2022-01-01', y0=0, y1=1,
+                dict(type='line', x0='2022-02-01', x1='2022-02-01', y0=0, y1=1,
                     xref='x',yref='paper', line=dict(color='red', width=2,dash='dashdot',)),
             ]
         )
