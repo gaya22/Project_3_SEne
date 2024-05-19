@@ -24,4 +24,4 @@ This work can represent a benchmark for estimating impacts on gas imports and ex
 Credits
 Antonio Succi (ist111480) - Data collection and cleaning, data analysis, regression models
 Gaia Pascucci (ist108713) - Breef data collection and cleaning, dashboard
-Nicola Guerra (ist ) - Data collection and cleaning, data analysis, feature selection and engineering, feature generation
+Nicola Guerra (ist111380) - Data collection and cleaning, data analysis, feature selection and engineering, feature generation
