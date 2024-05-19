@@ -204,6 +204,8 @@ app.layout = html.Div(style={'backgroundColor': 'white'}, children=[
                     html.Div(children=[ # Right part of the webpage containing the result
                         html.P('In this graph, just data from 2020 onwords are shown. Here we can appreciate the changings that the two events coused. '),
                         dcc.Graph(id='results-graph', figure=go.Figure(af.final_results_graph_parameters(dfIT, df_fin))),
+                        html.P('The blue line represents the real natural gas importations, while the blue one is the forecast result. It can be seen that the Covid-19 event did not have consequences, but after February 2022 things took another direction than expected. '),
+                        html.P('The predicted values follow the same growing trend as the past years, while the actual data shows an important decrease on the imported natural gas. ')
                     ], style={'width':'47%', 'float':'right', 'margin-top':'50px'})
                 ])
             ])

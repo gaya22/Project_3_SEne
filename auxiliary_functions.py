@@ -1,6 +1,6 @@
 """
 File: auxiliary_functions.py
-Description: home made libary with functions used in the main code and in the dashboard.
+Description: home made libary with functions used mainly in the dashboard and in the code.
 """
 
 import pandas as pd

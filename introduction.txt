@@ -2,7 +2,7 @@ This project was developed using GitHub, Visual Studio code, and various Python 
 
 This project consists of a dashboard, divided into 6 pages. The first one, the one you are reading, is meant as a presentation of the work. 
 
-The second one presents data from a dataset which showcases the exchanges of gas through specific exchange ports, with quantities, between European nations and their main trading partners through time. The user can explore the exchanged quantities during time, between nations by selecting the main country in a map and the second country from its list of partners. The data are monthly registered, and the dashboard provides also a slider to have the possibility to focus on a specific period. Then, the gaph can be saved on the work directory of the code. 
+The second one presents data from a dataset which showcases the exchanges of gas through specific exchange ports, with quantities, between European nations and their main trading partners through time. The user can explore the exchanged quantities during time, between nations by selecting the main country in a map and the second country from its list of partners. The data are monthly registered, and the dashboard provides also a slider to have the possibility to focus on a specific period. Then, the gaph can be saved on the work directory of the code (to do that, kaleido library has to be installed - it's not in the work directory because of the too large dimension of it). 
 
 The third page's aim is to give the possibility to the user to analyse the level of autocorrelation of the data shown in the second page. Both simple and partial autocorrelations graphs are provided, to give ideas for future studies on the dataset, without involving other additional information.   
 
